@@ -1,0 +1,44 @@
+{
+  "name": "gruene-notebook-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server für Grüne Parteiprogramme - Durchsuche Grundsatzprogramme, Wahlprogramme und mehr",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "gruene-notebook-mcp": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "node --test src/**/*.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "gruene",
+    "green-party",
+    "qdrant",
+    "vector-search",
+    "rag"
+  ],
+  "author": "Moritz Wächter",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@qdrant/js-client-rest": "^1.13.0",
+    "dotenv": "^16.4.0",
+    "fastembed": "^1.14.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MoritzWM/gruene-notebook-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MoritzWM/gruene-notebook-mcp/issues"
+  },
+  "homepage": "https://github.com/MoritzWM/gruene-notebook-mcp#readme"
+}
