@@ -6,8 +6,11 @@ services:
     environment:
       # Pflichtfelder (rot markiert in Coolify UI wenn leer)
       - QDRANT_URL=${QDRANT_URL:?}
-      - QDRANT_API_KEY=${QDRANT_API_KEY:?}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY:?}
+      # Qdrant Auth (entweder API-Key ODER Basic Auth)
+      - QDRANT_API_KEY=${QDRANT_API_KEY}
+      - QDRANT_BASIC_AUTH_USERNAME=${QDRANT_BASIC_AUTH_USERNAME}
+      - QDRANT_BASIC_AUTH_PASSWORD=${QDRANT_BASIC_AUTH_PASSWORD}
       # Optional mit Default
       - PORT=${PORT:-3000}
       # Optional (editierbar im UI)
