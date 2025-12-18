@@ -34,11 +34,10 @@ Trage ein:
 QDRANT_URL=https://deine-qdrant-instanz.com
 MISTRAL_API_KEY=dein-mistral-key
 
-# Qdrant Authentifizierung (eine der beiden Methoden):
-# Option A: API-Key
+# Qdrant Authentifizierung
 QDRANT_API_KEY=dein-api-key
 
-# Option B: Basic Auth (z.B. bei nginx-Proxy)
+# Basic Auth (falls Qdrant hinter nginx-Proxy)
 QDRANT_BASIC_AUTH_USERNAME=username
 QDRANT_BASIC_AUTH_PASSWORD=password
 
