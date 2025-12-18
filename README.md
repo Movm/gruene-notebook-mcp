@@ -17,41 +17,13 @@ Der MCP Server verbindet sich mit einer Qdrant-Vektordatenbank, in der Parteipro
 | `deutschland` | Bündnis 90/Die Grünen: Grundsatzprogramm 2020 |
 | `bundestag` | Bundestagsfraktion: Pressemitteilungen und Positionen |
 
-## Installation
+---
 
-### Voraussetzungen
+## Für Nutzer: Verbindung zum gehosteten Server
 
-- Node.js 18 oder höher
-- Zugang zu einer Qdrant-Instanz mit den Grünen-Dokumenten
+Der Server läuft gehostet - du brauchst keine lokale Installation.
 
-### Schritte
-
-```bash
-# Repository klonen
-git clone https://github.com/MoritzWM/gruene-notebook-mcp.git
-cd gruene-notebook-mcp
-
-# Abhängigkeiten installieren
-npm install
-
-# Umgebungsvariablen konfigurieren
-cp .env.example .env
-# .env bearbeiten und Qdrant-Zugangsdaten eintragen
-```
-
-## Konfiguration
-
-### Umgebungsvariablen
-
-```bash
-# Qdrant Vector Database
-QDRANT_URL=https://your-qdrant-instance.com
-QDRANT_API_KEY=your-api-key
-```
-
-### MCP Client Konfiguration
-
-#### Cursor / Claude Desktop
+### Cursor / Claude Desktop Konfiguration
 
 Füge in deiner MCP-Konfiguration hinzu:
 
@@ -59,24 +31,82 @@ Füge in deiner MCP-Konfiguration hinzu:
 {
   "mcpServers": {
     "gruene-notebook": {
-      "command": "node",
-      "args": ["/pfad/zu/gruene-notebook-mcp/src/index.js"],
-      "env": {
-        "QDRANT_URL": "https://your-qdrant-instance.com",
-        "QDRANT_API_KEY": "your-api-key"
-      }
+      "url": "https://mcp-notebook.gruenerator.de/mcp"
     }
   }
 }
 ```
 
-## Verwendung
+**Fertig!** Keine Installation, keine API-Keys nötig.
+
+### Verwendung
 
 Nach der Konfiguration kannst du in Claude/Cursor Fragen stellen wie:
 
 - "Suche in den österreichischen Grünen-Programmen nach Klimapolitik"
 - "Was sagt das Grundsatzprogramm der deutschen Grünen zur Energiewende?"
 - "Finde Positionen der Bundestagsfraktion zum Thema Mobilität"
+
+---
+
+## Für Admins: Selbst hosten
+
+### Mit Docker (empfohlen)
+
+```bash
+# Image bauen
+docker build -t gruene-notebook-mcp .
+
+# Container starten
+docker run -d \
+  --name gruene-notebook-mcp \
+  -p 3000:3000 \
+  -e QDRANT_URL=https://your-qdrant.com \
+  -e QDRANT_API_KEY=your-api-key \
+  gruene-notebook-mcp
+```
+
+### Mit Coolify
+
+1. Neues Projekt erstellen
+2. Git Repository verbinden: `https://github.com/Movm/gruene-notebook-mcp`
+3. Umgebungsvariablen setzen:
+   - `QDRANT_URL` - URL zur Qdrant-Instanz
+   - `QDRANT_API_KEY` - API-Key für Qdrant
+   - `PORT` - (optional, Standard: 3000)
+4. Deployen
+
+### Umgebungsvariablen
+
+| Variable | Beschreibung | Erforderlich |
+|----------|--------------|--------------|
+| `QDRANT_URL` | URL zur Qdrant-Instanz | Ja |
+| `QDRANT_API_KEY` | API-Key für Qdrant | Ja |
+| `PORT` | Server-Port | Nein (Standard: 3000) |
+
+---
+
+## API Endpoints
+
+| Endpoint | Methode | Beschreibung |
+|----------|---------|--------------|
+| `/mcp` | POST | MCP Kommunikation |
+| `/mcp` | GET | SSE Stream |
+| `/mcp` | DELETE | Session beenden |
+| `/health` | GET | Health Check |
+
+### Health Check Response
+
+```json
+{
+  "status": "ok",
+  "service": "gruene-notebook-mcp",
+  "version": "1.0.0",
+  "collections": ["oesterreich", "deutschland", "bundestag"]
+}
+```
+
+---
 
 ## Verfügbare Tools
 
@@ -98,29 +128,31 @@ Durchsucht die Parteiprogramme nach relevanten Textpassagen.
 }
 ```
 
+---
+
 ## Entwicklung
 
 ```bash
-# Server im Entwicklungsmodus starten (mit Auto-Reload)
+# Repository klonen
+git clone https://github.com/Movm/gruene-notebook-mcp.git
+cd gruene-notebook-mcp
+
+# Dependencies installieren
+npm install
+
+# Umgebungsvariablen setzen
+cp .env.example .env
+# .env bearbeiten
+
+# Server starten
+npm start
+
+# Oder mit Auto-Reload
 npm run dev
-
-# Tests ausführen
-npm test
 ```
 
-## Architektur
-
-```
-Benutzer → Claude/Cursor → MCP Server → Qdrant → Dokumente
-                              ↓
-                         FastEmbed
-                      (Embedding-Generierung)
-```
+---
 
 ## Lizenz
 
 MIT License - siehe [LICENSE](LICENSE)
-
-## Beitragen
-
-Pull Requests sind willkommen! Für größere Änderungen bitte zuerst ein Issue erstellen.
