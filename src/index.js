@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import express from 'express';
+import { randomUUID } from 'node:crypto';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 
 import { config, validateConfig } from './config.js';
 import { searchTool } from './tools/search.js';
@@ -12,71 +14,130 @@ try {
   validateConfig();
 } catch (error) {
   console.error(`[Config] ${error.message}`);
-  console.error('[Config] Bitte .env Datei erstellen (siehe .env.example)');
+  console.error('[Config] Bitte Umgebungsvariablen setzen (QDRANT_URL, QDRANT_API_KEY)');
   process.exit(1);
 }
 
-// MCP Server erstellen
-const server = new Server(
-  {
+const app = express();
+app.use(express.json());
+
+// Session-Verwaltung
+const transports = {};
+
+// MCP Server Factory
+function createMcpServer() {
+  const server = new McpServer({
     name: 'gruene-notebook-mcp',
     version: '1.0.0'
-  },
-  {
-    capabilities: {
-      tools: {}
-    }
-  }
-);
+  });
 
-// Tools auflisten
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: searchTool.name,
-        description: searchTool.description,
-        inputSchema: searchTool.inputSchema
-      }
-    ]
-  };
+  // Such-Tool registrieren
+  server.tool(
+    searchTool.name,
+    searchTool.description,
+    searchTool.inputSchema,
+    async (args) => {
+      const result = await searchTool.handler(args);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }
+        ]
+      };
+    }
+  );
+
+  return server;
+}
+
+// Health Check Endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'gruene-notebook-mcp',
+    version: '1.0.0',
+    collections: Object.keys(config.collections)
+  });
 });
 
-// Tool aufrufen
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
+// MCP POST Endpoint (Hauptkommunikation)
+app.post('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  let transport;
 
-  if (name === searchTool.name) {
-    const result = await searchTool.handler(args);
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(result, null, 2)
-        }
-      ]
+  if (sessionId && transports[sessionId]) {
+    transport = transports[sessionId];
+  } else if (!sessionId && isInitializeRequest(req.body)) {
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (id) => {
+        transports[id] = transport;
+        console.log(`[Session] Neue Session: ${id}`);
+      },
+      onsessionclosed: (id) => {
+        delete transports[id];
+        console.log(`[Session] Session beendet: ${id}`);
+      }
+    });
+
+    transport.onclose = () => {
+      if (transport.sessionId) {
+        delete transports[transport.sessionId];
+      }
     };
+
+    const server = createMcpServer();
+    await server.connect(transport);
+  } else {
+    res.status(400).json({
+      jsonrpc: '2.0',
+      error: { code: -32000, message: 'Ungültige Session' },
+      id: null
+    });
+    return;
   }
 
-  throw new Error(`Unbekanntes Tool: ${name}`);
+  await transport.handleRequest(req, res, req.body);
+});
+
+// MCP GET Endpoint (SSE Stream)
+app.get('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  const transport = transports[sessionId];
+
+  if (transport) {
+    await transport.handleRequest(req, res);
+  } else {
+    res.status(400).json({ error: 'Ungültige Session' });
+  }
+});
+
+// MCP DELETE Endpoint (Session beenden)
+app.delete('/mcp', async (req, res) => {
+  const sessionId = req.headers['mcp-session-id'];
+  const transport = transports[sessionId];
+
+  if (transport) {
+    await transport.handleRequest(req, res);
+  } else {
+    res.status(400).json({ error: 'Ungültige Session' });
+  }
 });
 
 // Server starten
-async function main() {
-  console.error('='.repeat(50));
-  console.error('Grüne Notebook MCP Server');
-  console.error('='.repeat(50));
-  console.error(`Qdrant: ${config.qdrant.url}`);
-  console.error(`Sammlungen: ${Object.keys(config.collections).join(', ')}`);
-  console.error('='.repeat(50));
+const PORT = process.env.PORT || 3000;
 
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-
-  console.error('[Server] Bereit für Anfragen');
-}
-
-main().catch((error) => {
-  console.error('[Server] Kritischer Fehler:', error);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log('='.repeat(50));
+  console.log('Grüne Notebook MCP Server');
+  console.log('='.repeat(50));
+  console.log(`Port: ${PORT}`);
+  console.log(`Qdrant: ${config.qdrant.url}`);
+  console.log(`Sammlungen: ${Object.keys(config.collections).join(', ')}`);
+  console.log('='.repeat(50));
+  console.log(`MCP Endpoint: http://localhost:${PORT}/mcp`);
+  console.log(`Health Check: http://localhost:${PORT}/health`);
+  console.log('='.repeat(50));
 });
