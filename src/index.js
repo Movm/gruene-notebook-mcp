@@ -31,13 +31,12 @@ function createMcpServer() {
     version: '1.0.0'
   });
 
-  // Such-Tool registrieren
+  // Such-Tool registrieren mit Zod Schema
   server.tool(
     searchTool.name,
-    searchTool.description,
     searchTool.inputSchema,
-    async (args) => {
-      const result = await searchTool.handler(args);
+    async ({ query, collection, limit }) => {
+      const result = await searchTool.handler({ query, collection, limit });
       return {
         content: [
           {
