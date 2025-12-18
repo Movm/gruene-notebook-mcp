@@ -1,11 +1,11 @@
 {
-  "name": "gruene-notebook-mcp",
+  "name": "gruenerator-mcp",
   "version": "1.0.0",
-  "description": "MCP Server für Grüne Parteiprogramme - Durchsuche Grundsatzprogramme, Wahlprogramme und mehr",
+  "description": "Gruenerator MCP Server - Suche in Grünen Parteiprogrammen (DE/AT)",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "gruene-notebook-mcp": "./src/index.js"
+    "gruenerator-mcp": "./src/index.js"
   },
   "scripts": {
     "start": "node src/index.js",

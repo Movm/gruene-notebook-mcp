@@ -4,11 +4,11 @@ import { searchCollection } from '../qdrant/client.js';
 import { generateEmbedding } from '../embeddings/mistral.js';
 
 export const searchTool = {
-  name: 'search_gruene_documents',
-  description: 'Durchsucht Grüne Parteiprogramme nach relevanten Textpassagen. Verfügbare Sammlungen: oesterreich (Die Grünen Österreich), deutschland (Bündnis 90/Die Grünen Grundsatzprogramm), bundestag (Bundestagsfraktion).',
+  name: 'gruenerator_search',
+  description: 'Durchsucht Grüne Parteiprogramme. WICHTIG: Du musst angeben ob du in österreichischen oder deutschen Dokumenten suchen willst. Sammlungen: oesterreich (Die Grünen Österreich - EU-Wahl, Grundsatz, Nationalrat), deutschland (Bündnis 90/Die Grünen Grundsatzprogramm 2020).',
   inputSchema: {
     query: z.string().describe('Suchbegriff oder Frage'),
-    collection: z.enum(['oesterreich', 'deutschland', 'bundestag']).describe('Welche Dokumentensammlung durchsuchen'),
+    collection: z.enum(['oesterreich', 'deutschland']).describe('PFLICHT: oesterreich oder deutschland'),
     limit: z.number().default(5).describe('Maximale Anzahl Ergebnisse (1-20)')
   },
 
@@ -18,7 +18,7 @@ export const searchTool = {
     if (!collectionConfig) {
       return {
         error: true,
-        message: `Unbekannte Sammlung: ${collection}. Verfügbar: oesterreich, deutschland, bundestag`
+        message: `Unbekannte Sammlung: ${collection}. Verfügbar: oesterreich, deutschland`
       };
     }
 

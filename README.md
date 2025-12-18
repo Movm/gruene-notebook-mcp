@@ -1,4 +1,4 @@
-# Grüne Notebook MCP Server
+# Gruenerator MCP Server
 
 Ein [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) Server, der KI-Assistenten direkten Zugriff auf Grüne Parteiprogramme ermöglicht.
 
@@ -15,7 +15,8 @@ Der MCP Server verbindet sich mit einer Qdrant-Vektordatenbank, in der Parteipro
 |----------|--------------|
 | `oesterreich` | Die Grünen Österreich: EU-Wahlprogramm, Grundsatzprogramm, Nationalratswahl-Programm |
 | `deutschland` | Bündnis 90/Die Grünen: Grundsatzprogramm 2020 |
-| `bundestag` | Bundestagsfraktion: Pressemitteilungen und Positionen |
+
+**Wichtig:** Bei jeder Suche muss angegeben werden, ob in österreichischen oder deutschen Dokumenten gesucht werden soll.
 
 ---
 
@@ -30,7 +31,7 @@ Füge in deiner MCP-Konfiguration hinzu:
 ```json
 {
   "mcpServers": {
-    "gruene-notebook": {
+    "gruenerator": {
       "url": "https://mcp-notebook.gruenerator.de/mcp"
     }
   }
@@ -45,7 +46,6 @@ Nach der Konfiguration kannst du in Claude/Cursor Fragen stellen wie:
 
 - "Suche in den österreichischen Grünen-Programmen nach Klimapolitik"
 - "Was sagt das Grundsatzprogramm der deutschen Grünen zur Energiewende?"
-- "Finde Positionen der Bundestagsfraktion zum Thema Mobilität"
 
 ---
 
@@ -55,15 +55,16 @@ Nach der Konfiguration kannst du in Claude/Cursor Fragen stellen wie:
 
 ```bash
 # Image bauen
-docker build -t gruene-notebook-mcp .
+docker build -t gruenerator-mcp .
 
 # Container starten
 docker run -d \
-  --name gruene-notebook-mcp \
+  --name gruenerator-mcp \
   -p 3000:3000 \
   -e QDRANT_URL=https://your-qdrant.com \
   -e QDRANT_API_KEY=your-api-key \
-  gruene-notebook-mcp
+  -e MISTRAL_API_KEY=your-mistral-key \
+  gruenerator-mcp
 ```
 
 ### Mit Coolify
@@ -73,6 +74,7 @@ docker run -d \
 3. Umgebungsvariablen setzen:
    - `QDRANT_URL` - URL zur Qdrant-Instanz
    - `QDRANT_API_KEY` - API-Key für Qdrant
+   - `MISTRAL_API_KEY` - API-Key für Mistral (Embeddings)
    - `PORT` - (optional, Standard: 3000)
 4. Deployen
 
@@ -82,6 +84,7 @@ docker run -d \
 |----------|--------------|--------------|
 | `QDRANT_URL` | URL zur Qdrant-Instanz | Ja |
 | `QDRANT_API_KEY` | API-Key für Qdrant | Ja |
+| `MISTRAL_API_KEY` | API-Key für Mistral Embeddings | Ja |
 | `PORT` | Server-Port | Nein (Standard: 3000) |
 
 ---
@@ -100,9 +103,9 @@ docker run -d \
 ```json
 {
   "status": "ok",
-  "service": "gruene-notebook-mcp",
+  "service": "gruenerator-mcp",
   "version": "1.0.0",
-  "collections": ["oesterreich", "deutschland", "bundestag"]
+  "collections": ["oesterreich", "deutschland"]
 }
 ```
 
@@ -110,13 +113,13 @@ docker run -d \
 
 ## Verfügbare Tools
 
-### `search_gruene_documents`
+### `gruenerator_search`
 
 Durchsucht die Parteiprogramme nach relevanten Textpassagen.
 
 **Parameter:**
 - `query` (string, erforderlich) - Suchbegriff oder Frage
-- `collection` (string, erforderlich) - Welche Sammlung: `oesterreich`, `deutschland`, `bundestag`
+- `collection` (string, erforderlich) - Welche Sammlung: `oesterreich` oder `deutschland`
 - `limit` (number, optional) - Maximale Anzahl Ergebnisse (Standard: 5)
 
 **Beispiel:**

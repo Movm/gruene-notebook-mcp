@@ -25,11 +25,6 @@ export const config = {
       name: 'grundsatz_documents',
       displayName: 'Bündnis 90/Die Grünen',
       description: 'Grundsatzprogramm 2020'
-    },
-    bundestag: {
-      name: 'bundestag_content',
-      displayName: 'Bundestagsfraktion',
-      description: 'Pressemitteilungen und Positionen'
     }
   }
 };

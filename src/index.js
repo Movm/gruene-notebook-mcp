@@ -27,7 +27,7 @@ const transports = {};
 // MCP Server Factory
 function createMcpServer() {
   const server = new McpServer({
-    name: 'gruene-notebook-mcp',
+    name: 'gruenerator-mcp',
     version: '1.0.0'
   });
 
@@ -55,7 +55,7 @@ function createMcpServer() {
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
-    service: 'gruene-notebook-mcp',
+    service: 'gruenerator-mcp',
     version: '1.0.0',
     collections: Object.keys(config.collections)
   });
@@ -130,7 +130,7 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log('='.repeat(50));
-  console.log('Grüne Notebook MCP Server');
+  console.log('Gruenerator MCP Server');
   console.log('='.repeat(50));
   console.log(`Port: ${PORT}`);
   console.log(`Qdrant: ${config.qdrant.url}`);
