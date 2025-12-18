@@ -1,26 +1,38 @@
 #!/usr/bin/env node
 
+console.log('[Boot] Starting Gruenerator MCP Server...');
+console.log(`[Boot] Node.js ${process.version}`);
+console.log(`[Boot] Environment: ${process.env.NODE_ENV || 'development'}`);
+
+console.log('[Boot] Loading dependencies...');
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
+console.log('[Boot] Dependencies loaded');
 
+console.log('[Boot] Loading config...');
 import { config, validateConfig } from './config.js';
 import { searchTool } from './tools/search.js';
 import { clientConfigTool, generateClientConfigs } from './tools/clientConfig.js';
+console.log('[Boot] Config loaded');
 
 // Konfiguration validieren
+console.log('[Config] Validating environment variables...');
 try {
   validateConfig();
+  console.log('[Config] Validation successful');
 } catch (error) {
-  console.error(`[Config] ${error.message}`);
-  console.error('[Config] Bitte Umgebungsvariablen setzen (QDRANT_URL, QDRANT_API_KEY)');
+  console.error(`[Config] ERROR: ${error.message}`);
+  console.error('[Config] Required: QDRANT_URL, QDRANT_API_KEY, MISTRAL_API_KEY');
   process.exit(1);
 }
 
+console.log('[Boot] Setting up Express...');
 const app = express();
 app.use(express.json());
+console.log('[Boot] Express configured');
 
 // Helper: Base URL ermitteln
 function getBaseUrl(req) {
@@ -238,6 +250,7 @@ app.delete('/mcp', async (req, res) => {
 
 // Server starten
 const PORT = process.env.PORT || 3000;
+console.log(`[Boot] Starting server on port ${PORT}...`);
 
 app.listen(PORT, () => {
   const localUrl = `http://localhost:${PORT}`;
@@ -260,4 +273,5 @@ app.listen(PORT, () => {
   console.log(`  Info:       ${localUrl}/info`);
   console.log(`  Config:     ${localUrl}/config/:client`);
   console.log('='.repeat(50));
+  console.log('[Boot] Server ready for requests');
 });
