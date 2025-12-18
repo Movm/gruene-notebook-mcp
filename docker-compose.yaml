@@ -7,8 +7,9 @@ services:
       # Pflichtfelder (rot markiert in Coolify UI wenn leer)
       - QDRANT_URL=${QDRANT_URL:?}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY:?}
-      # Qdrant Auth (entweder API-Key ODER Basic Auth)
+      # Qdrant Auth
       - QDRANT_API_KEY=${QDRANT_API_KEY}
+      # Basic Auth für nginx-Proxy vor Qdrant
       - QDRANT_BASIC_AUTH_USERNAME=${QDRANT_BASIC_AUTH_USERNAME}
       - QDRANT_BASIC_AUTH_PASSWORD=${QDRANT_BASIC_AUTH_PASSWORD}
       # Optional mit Default
