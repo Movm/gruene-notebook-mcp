@@ -86,6 +86,7 @@ docker run -d \
 | `QDRANT_API_KEY` | API-Key für Qdrant | Ja |
 | `MISTRAL_API_KEY` | API-Key für Mistral Embeddings | Ja |
 | `PORT` | Server-Port | Nein (Standard: 3000) |
+| `PUBLIC_URL` | Öffentliche URL für Config-Generierung | Nein |
 
 ---
 
@@ -97,6 +98,32 @@ docker run -d \
 | `/mcp` | GET | SSE Stream |
 | `/mcp` | DELETE | Session beenden |
 | `/health` | GET | Health Check |
+| `/.well-known/mcp.json` | GET | Auto-Discovery Metadata |
+| `/config/:client` | GET | Client-Konfiguration generieren |
+| `/info` | GET | Server-Informationen |
+
+### Auto-Discovery
+
+Der Server unterstützt automatische Erkennung durch MCP-Clients über `/.well-known/mcp.json`:
+
+```bash
+curl https://mcp-notebook.gruenerator.de/.well-known/mcp.json
+```
+
+### Client-Konfiguration abrufen
+
+Generiert eine fertige Konfiguration für verschiedene Clients:
+
+```bash
+# Für Claude Desktop
+curl https://mcp-notebook.gruenerator.de/config/claude
+
+# Für Cursor
+curl https://mcp-notebook.gruenerator.de/config/cursor
+
+# Für VS Code
+curl https://mcp-notebook.gruenerator.de/config/vscode
+```
 
 ### Health Check Response
 
@@ -130,6 +157,25 @@ Durchsucht die Parteiprogramme nach relevanten Textpassagen.
   "limit": 5
 }
 ```
+
+### `get_client_config`
+
+Generiert fertige MCP-Konfigurationen für verschiedene Clients.
+
+**Parameter:**
+- `client` (string, erforderlich) - Welcher Client: `claude`, `cursor` oder `vscode`
+
+**Beispiel:**
+```json
+{
+  "client": "claude"
+}
+```
+
+**Antwort enthält:**
+- Fertige JSON-Konfiguration zum Kopieren
+- Pfade zu den Konfigurationsdateien je nach Betriebssystem
+- Schritt-für-Schritt Anleitung
 
 ---
 
