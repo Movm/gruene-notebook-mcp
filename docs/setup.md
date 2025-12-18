@@ -177,3 +177,17 @@ Oder mit Docker Compose:
 ```bash
 docker compose up -d
 ```
+
+## Mit Coolify deployen
+
+1. **New Application** → **Public Repository**
+2. Repository URL: `https://github.com/Movm/Gruenerator-MCP`
+3. Branch: `main`
+4. Build Pack: **Docker Compose**
+5. Docker Compose Location: `/docker-compose.yml` (nicht `.yaml`!)
+6. **Continue** → Umgebungsvariablen werden automatisch erkannt:
+   - `QDRANT_URL` (Pflichtfeld, rot markiert)
+   - `QDRANT_API_KEY` (Pflichtfeld)
+   - `MISTRAL_API_KEY` (Pflichtfeld)
+   - `PUBLIC_URL` (optional - hier deine Domain eintragen)
+7. **Deploy**
