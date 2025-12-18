@@ -1,5 +1,8 @@
 FROM node:20-slim
 
+# curl für Healthcheck installieren
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 # OCI Image Labels (Standard für Container-Registries)
 LABEL org.opencontainers.image.title="Gruenerator MCP Server"
 LABEL org.opencontainers.image.description="MCP Server für Grüne Parteiprogramme (Deutschland & Österreich)"
