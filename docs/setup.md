@@ -32,8 +32,15 @@ nano .env  # oder dein bevorzugter Editor
 Trage ein:
 ```
 QDRANT_URL=https://deine-qdrant-instanz.com
-QDRANT_API_KEY=dein-api-key
 MISTRAL_API_KEY=dein-mistral-key
+
+# Qdrant Authentifizierung (eine der beiden Methoden):
+# Option A: API-Key
+QDRANT_API_KEY=dein-api-key
+
+# Option B: Basic Auth (z.B. bei nginx-Proxy)
+QDRANT_BASIC_AUTH_USERNAME=username
+QDRANT_BASIC_AUTH_PASSWORD=password
 
 # Optional: Öffentliche URL für Config-Generierung
 # PUBLIC_URL=https://mcp.gruenerator.de

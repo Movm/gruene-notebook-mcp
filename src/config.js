@@ -37,9 +37,14 @@ export function validateConfig() {
   if (!config.qdrant.url) {
     throw new Error('QDRANT_URL ist nicht gesetzt');
   }
-  if (!config.qdrant.apiKey) {
-    throw new Error('QDRANT_API_KEY ist nicht gesetzt');
+
+  const hasApiKey = !!config.qdrant.apiKey;
+  const hasBasicAuth = config.qdrant.basicAuth.username && config.qdrant.basicAuth.password;
+
+  if (!hasApiKey && !hasBasicAuth) {
+    throw new Error('Qdrant Auth fehlt: Setze QDRANT_API_KEY oder QDRANT_BASIC_AUTH_USERNAME + QDRANT_BASIC_AUTH_PASSWORD');
   }
+
   if (!config.mistral.apiKey) {
     throw new Error('MISTRAL_API_KEY ist nicht gesetzt');
   }
