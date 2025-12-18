@@ -70,7 +70,7 @@ docker run -d \
 ### Mit Coolify
 
 1. Neues Projekt erstellen
-2. Git Repository verbinden: `https://github.com/Movm/gruene-notebook-mcp`
+2. Git Repository verbinden: `https://github.com/Movm/Gruenerator-MCP`
 3. Umgebungsvariablen setzen:
    - `QDRANT_URL` - URL zur Qdrant-Instanz
    - `QDRANT_API_KEY` - API-Key für Qdrant
@@ -137,8 +137,8 @@ Durchsucht die Parteiprogramme nach relevanten Textpassagen.
 
 ```bash
 # Repository klonen
-git clone https://github.com/Movm/gruene-notebook-mcp.git
-cd gruene-notebook-mcp
+git clone https://github.com/Movm/Gruenerator-MCP.git
+cd Gruenerator-MCP
 
 # Dependencies installieren
 npm install
