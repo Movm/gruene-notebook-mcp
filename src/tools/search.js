@@ -1,29 +1,15 @@
+import { z } from 'zod';
 import { config } from '../config.js';
 import { searchCollection } from '../qdrant/client.js';
-import { generateEmbedding } from '../embeddings/fastembed.js';
+import { generateEmbedding } from '../embeddings/mistral.js';
 
 export const searchTool = {
   name: 'search_gruene_documents',
   description: 'Durchsucht Grüne Parteiprogramme nach relevanten Textpassagen. Verfügbare Sammlungen: oesterreich (Die Grünen Österreich), deutschland (Bündnis 90/Die Grünen Grundsatzprogramm), bundestag (Bundestagsfraktion).',
   inputSchema: {
-    type: 'object',
-    properties: {
-      query: {
-        type: 'string',
-        description: 'Suchbegriff oder Frage'
-      },
-      collection: {
-        type: 'string',
-        enum: ['oesterreich', 'deutschland', 'bundestag'],
-        description: 'Welche Dokumentensammlung durchsuchen'
-      },
-      limit: {
-        type: 'number',
-        default: 5,
-        description: 'Maximale Anzahl Ergebnisse (1-20)'
-      }
-    },
-    required: ['query', 'collection']
+    query: z.string().describe('Suchbegriff oder Frage'),
+    collection: z.enum(['oesterreich', 'deutschland', 'bundestag']).describe('Welche Dokumentensammlung durchsuchen'),
+    limit: z.number().default(5).describe('Maximale Anzahl Ergebnisse (1-20)')
   },
 
   async handler({ query, collection, limit = 5 }) {

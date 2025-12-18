@@ -11,6 +11,10 @@ export const config = {
     }
   },
 
+  mistral: {
+    apiKey: process.env.MISTRAL_API_KEY
+  },
+
   collections: {
     oesterreich: {
       name: 'oesterreich_gruene_documents',
@@ -36,5 +40,8 @@ export function validateConfig() {
   }
   if (!config.qdrant.apiKey) {
     throw new Error('QDRANT_API_KEY ist nicht gesetzt');
+  }
+  if (!config.mistral.apiKey) {
+    throw new Error('MISTRAL_API_KEY ist nicht gesetzt');
   }
 }
