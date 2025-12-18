@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const config = {
+  server: {
+    publicUrl: process.env.PUBLIC_URL || null
+  },
+
   qdrant: {
     url: process.env.QDRANT_URL,
     apiKey: process.env.QDRANT_API_KEY,

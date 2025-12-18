@@ -8,6 +8,7 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 
 import { config, validateConfig } from './config.js';
 import { searchTool } from './tools/search.js';
+import { clientConfigTool, generateClientConfigs } from './tools/clientConfig.js';
 
 // Konfiguration validieren
 try {
@@ -21,11 +22,16 @@ try {
 const app = express();
 app.use(express.json());
 
+// Helper: Base URL ermitteln
+function getBaseUrl(req) {
+  return config.server.publicUrl || `${req.protocol}://${req.get('host')}`;
+}
+
 // Session-Verwaltung
 const transports = {};
 
 // MCP Server Factory
-function createMcpServer() {
+function createMcpServer(baseUrl) {
   const server = new McpServer({
     name: 'gruenerator-mcp',
     version: '1.0.0'
@@ -48,6 +54,23 @@ function createMcpServer() {
     }
   );
 
+  // Client-Config-Tool registrieren
+  server.tool(
+    clientConfigTool.name,
+    clientConfigTool.inputSchema,
+    async ({ client }) => {
+      const result = clientConfigTool.handler({ client }, baseUrl);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }
+        ]
+      };
+    }
+  );
+
   return server;
 }
 
@@ -58,6 +81,93 @@ app.get('/health', (req, res) => {
     service: 'gruenerator-mcp',
     version: '1.0.0',
     collections: Object.keys(config.collections)
+  });
+});
+
+// Auto-Discovery Endpoint (Standard für MCP-Clients)
+app.get('/.well-known/mcp.json', (req, res) => {
+  const baseUrl = getBaseUrl(req);
+  res.json({
+    name: 'gruenerator-mcp',
+    version: '1.0.0',
+    description: 'Suche in Grünen Parteiprogrammen (Deutschland & Österreich)',
+    homepage: 'https://github.com/Movm/Gruenerator-MCP',
+    mcp_endpoint: `${baseUrl}/mcp`,
+    transport: 'streamable-http',
+    tools: [
+      {
+        name: 'gruenerator_search',
+        description: 'Durchsucht Grüne Parteiprogramme (Österreich/Deutschland)'
+      },
+      {
+        name: 'get_client_config',
+        description: 'Generiert fertige MCP-Client-Konfigurationen'
+      }
+    ],
+    collections: Object.entries(config.collections).map(([key, col]) => ({
+      id: key,
+      name: col.displayName,
+      description: col.description
+    })),
+    supported_clients: ['claude', 'cursor', 'vscode']
+  });
+});
+
+// Client-spezifische Konfiguration
+app.get('/config/:client', (req, res) => {
+  const { client } = req.params;
+  const baseUrl = getBaseUrl(req);
+  const validClients = ['claude', 'cursor', 'vscode'];
+
+  if (!validClients.includes(client)) {
+    return res.status(404).json({
+      error: 'Unbekannter Client',
+      message: `Unterstützte Clients: ${validClients.join(', ')}`,
+      available: validClients
+    });
+  }
+
+  const result = clientConfigTool.handler({ client }, baseUrl);
+  res.json(result);
+});
+
+// Server-Info Endpoint
+app.get('/info', (req, res) => {
+  const baseUrl = getBaseUrl(req);
+  res.json({
+    server: {
+      name: 'gruenerator-mcp',
+      version: '1.0.0',
+      description: 'MCP Server für Grüne Parteiprogramme (Deutschland & Österreich)'
+    },
+    endpoints: {
+      mcp: `${baseUrl}/mcp`,
+      health: `${baseUrl}/health`,
+      discovery: `${baseUrl}/.well-known/mcp.json`,
+      config: `${baseUrl}/config/:client`,
+      info: `${baseUrl}/info`
+    },
+    tools: [
+      {
+        name: 'gruenerator_search',
+        description: 'Durchsucht Grüne Parteiprogramme',
+        collections: Object.keys(config.collections)
+      },
+      {
+        name: 'get_client_config',
+        description: 'Generiert MCP-Client-Konfigurationen',
+        clients: ['claude', 'cursor', 'vscode']
+      }
+    ],
+    collections: Object.entries(config.collections).map(([key, col]) => ({
+      id: key,
+      name: col.displayName,
+      description: col.description
+    })),
+    links: {
+      github: 'https://github.com/Movm/Gruenerator-MCP',
+      documentation: 'https://github.com/Movm/Gruenerator-MCP#readme'
+    }
   });
 });
 
@@ -87,7 +197,8 @@ app.post('/mcp', async (req, res) => {
       }
     };
 
-    const server = createMcpServer();
+    const baseUrl = getBaseUrl(req);
+    const server = createMcpServer(baseUrl);
     await server.connect(transport);
   } else {
     res.status(400).json({
@@ -129,14 +240,24 @@ app.delete('/mcp', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
+  const localUrl = `http://localhost:${PORT}`;
+  const publicUrl = config.server.publicUrl;
+
   console.log('='.repeat(50));
   console.log('Gruenerator MCP Server');
   console.log('='.repeat(50));
   console.log(`Port: ${PORT}`);
   console.log(`Qdrant: ${config.qdrant.url}`);
   console.log(`Sammlungen: ${Object.keys(config.collections).join(', ')}`);
+  if (publicUrl) {
+    console.log(`Public URL: ${publicUrl}`);
+  }
   console.log('='.repeat(50));
-  console.log(`MCP Endpoint: http://localhost:${PORT}/mcp`);
-  console.log(`Health Check: http://localhost:${PORT}/health`);
+  console.log('Endpoints:');
+  console.log(`  MCP:        ${localUrl}/mcp`);
+  console.log(`  Health:     ${localUrl}/health`);
+  console.log(`  Discovery:  ${localUrl}/.well-known/mcp.json`);
+  console.log(`  Info:       ${localUrl}/info`);
+  console.log(`  Config:     ${localUrl}/config/:client`);
   console.log('='.repeat(50));
 });

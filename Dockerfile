@@ -1,5 +1,18 @@
 FROM node:20-slim
 
+# OCI Image Labels (Standard für Container-Registries)
+LABEL org.opencontainers.image.title="Gruenerator MCP Server"
+LABEL org.opencontainers.image.description="MCP Server für Grüne Parteiprogramme (Deutschland & Österreich)"
+LABEL org.opencontainers.image.source="https://github.com/Movm/Gruenerator-MCP"
+LABEL org.opencontainers.image.documentation="https://github.com/Movm/Gruenerator-MCP#readme"
+LABEL org.opencontainers.image.vendor="Gruenerator"
+LABEL org.opencontainers.image.licenses="MIT"
+
+# MCP Discovery Labels
+LABEL mcp.discoverable="true"
+LABEL mcp.transport="streamable-http"
+LABEL mcp.endpoint="/mcp"
+
 WORKDIR /app
 
 # Package files kopieren
