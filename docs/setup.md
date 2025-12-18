@@ -184,7 +184,7 @@ docker compose up -d
 2. Repository URL: `https://github.com/Movm/Gruenerator-MCP`
 3. Branch: `main`
 4. Build Pack: **Docker Compose**
-5. Docker Compose Location: `/docker-compose.yml` (nicht `.yaml`!)
+5. Docker Compose Location: `/docker-compose.yaml` (Standard)
 6. **Continue** → Umgebungsvariablen werden automatisch erkannt:
    - `QDRANT_URL` (Pflichtfeld, rot markiert)
    - `QDRANT_API_KEY` (Pflichtfeld)
