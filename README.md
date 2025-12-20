@@ -2,12 +2,14 @@
 
 Ein [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) Server, der KI-Assistenten direkten Zugriff auf Grüne Parteiprogramme ermöglicht.
 
-## Was macht dieser Server?
+## Features
 
-Der MCP Server verbindet sich mit einer Qdrant-Vektordatenbank, in der Parteiprogramme der Grünen gespeichert sind. KI-Assistenten wie Claude können damit:
-
-- **Dokumente durchsuchen** - "Finde alle Stellen über Klimaschutz"
-- **Fragen beantworten** - "Was ist die Position der Grünen zur Energiewende?"
+- **Hybrid-Suche** - Kombiniert Vektor- und Textsuche mit RRF-Fusion
+- **Deutsche Optimierung** - Umlaut-Handling (ä→ae, ö→oe, etc.) und Query-Varianten
+- **Qualitäts-Scoring** - Ergebnisse gewichtet nach Dokumentenqualität
+- **Semantisches Caching** - Schnelle Antworten für wiederholte Anfragen
+- **Metadaten-Filter** - Filterung nach Dokumenttyp, Titel, etc.
+- **MCP Resources** - Direkter Zugriff auf Sammlungsinformationen
 
 ## Verfügbare Dokumentensammlungen
 
@@ -16,40 +18,9 @@ Der MCP Server verbindet sich mit einer Qdrant-Vektordatenbank, in der Parteipro
 | `oesterreich` | Die Grünen Österreich: EU-Wahlprogramm, Grundsatzprogramm, Nationalratswahl-Programm |
 | `deutschland` | Bündnis 90/Die Grünen: Grundsatzprogramm 2020 |
 
-**Wichtig:** Bei jeder Suche muss angegeben werden, ob in österreichischen oder deutschen Dokumenten gesucht werden soll.
-
 ---
 
-## Für Nutzer: Verbindung zum gehosteten Server
-
-Der Server läuft gehostet - du brauchst keine lokale Installation.
-
-### Cursor / Claude Desktop Konfiguration
-
-Füge in deiner MCP-Konfiguration hinzu:
-
-```json
-{
-  "mcpServers": {
-    "gruenerator": {
-      "url": "https://mcp-notebook.gruenerator.de/mcp"
-    }
-  }
-}
-```
-
-**Fertig!** Keine Installation, keine API-Keys nötig.
-
-### Verwendung
-
-Nach der Konfiguration kannst du in Claude/Cursor Fragen stellen wie:
-
-- "Suche in den österreichischen Grünen-Programmen nach Klimapolitik"
-- "Was sagt das Grundsatzprogramm der deutschen Grünen zur Energiewende?"
-
----
-
-## Für Admins: Selbst hosten
+## Installation & Konfiguration
 
 ### Mit Docker (empfohlen)
 
@@ -67,119 +38,7 @@ docker run -d \
   gruenerator-mcp
 ```
 
-### Mit Coolify
-
-1. Neues Projekt erstellen
-2. Git Repository verbinden: `https://github.com/Movm/Gruenerator-MCP`
-3. Umgebungsvariablen setzen:
-   - `QDRANT_URL` - URL zur Qdrant-Instanz
-   - `QDRANT_API_KEY` - API-Key für Qdrant
-   - `MISTRAL_API_KEY` - API-Key für Mistral (Embeddings)
-   - `PORT` - (optional, Standard: 3000)
-4. Deployen
-
-### Umgebungsvariablen
-
-| Variable | Beschreibung | Erforderlich |
-|----------|--------------|--------------|
-| `QDRANT_URL` | URL zur Qdrant-Instanz | Ja |
-| `QDRANT_API_KEY` | API-Key für Qdrant | Ja |
-| `MISTRAL_API_KEY` | API-Key für Mistral Embeddings | Ja |
-| `PORT` | Server-Port | Nein (Standard: 3000) |
-| `PUBLIC_URL` | Öffentliche URL für Config-Generierung | Nein |
-
----
-
-## API Endpoints
-
-| Endpoint | Methode | Beschreibung |
-|----------|---------|--------------|
-| `/mcp` | POST | MCP Kommunikation |
-| `/mcp` | GET | SSE Stream |
-| `/mcp` | DELETE | Session beenden |
-| `/health` | GET | Health Check |
-| `/.well-known/mcp.json` | GET | Auto-Discovery Metadata |
-| `/config/:client` | GET | Client-Konfiguration generieren |
-| `/info` | GET | Server-Informationen |
-
-### Auto-Discovery
-
-Der Server unterstützt automatische Erkennung durch MCP-Clients über `/.well-known/mcp.json`:
-
-```bash
-curl https://mcp-notebook.gruenerator.de/.well-known/mcp.json
-```
-
-### Client-Konfiguration abrufen
-
-Generiert eine fertige Konfiguration für verschiedene Clients:
-
-```bash
-# Für Claude Desktop
-curl https://mcp-notebook.gruenerator.de/config/claude
-
-# Für Cursor
-curl https://mcp-notebook.gruenerator.de/config/cursor
-
-# Für VS Code
-curl https://mcp-notebook.gruenerator.de/config/vscode
-```
-
-### Health Check Response
-
-```json
-{
-  "status": "ok",
-  "service": "gruenerator-mcp",
-  "version": "1.0.0",
-  "collections": ["oesterreich", "deutschland"]
-}
-```
-
----
-
-## Verfügbare Tools
-
-### `gruenerator_search`
-
-Durchsucht die Parteiprogramme nach relevanten Textpassagen.
-
-**Parameter:**
-- `query` (string, erforderlich) - Suchbegriff oder Frage
-- `collection` (string, erforderlich) - Welche Sammlung: `oesterreich` oder `deutschland`
-- `limit` (number, optional) - Maximale Anzahl Ergebnisse (Standard: 5)
-
-**Beispiel:**
-```json
-{
-  "query": "Klimaschutz und erneuerbare Energien",
-  "collection": "oesterreich",
-  "limit": 5
-}
-```
-
-### `get_client_config`
-
-Generiert fertige MCP-Konfigurationen für verschiedene Clients.
-
-**Parameter:**
-- `client` (string, erforderlich) - Welcher Client: `claude`, `cursor` oder `vscode`
-
-**Beispiel:**
-```json
-{
-  "client": "claude"
-}
-```
-
-**Antwort enthält:**
-- Fertige JSON-Konfiguration zum Kopieren
-- Pfade zu den Konfigurationsdateien je nach Betriebssystem
-- Schritt-für-Schritt Anleitung
-
----
-
-## Entwicklung
+### Lokal entwickeln
 
 ```bash
 # Repository klonen
@@ -199,6 +58,176 @@ npm start
 # Oder mit Auto-Reload
 npm run dev
 ```
+
+### Mit Coolify
+
+1. Neues Projekt erstellen
+2. Git Repository verbinden: `https://github.com/Movm/Gruenerator-MCP`
+3. Umgebungsvariablen setzen (siehe unten)
+4. Deployen
+
+### Umgebungsvariablen
+
+| Variable | Beschreibung | Erforderlich |
+|----------|--------------|--------------|
+| `QDRANT_URL` | URL zur Qdrant-Instanz | Ja |
+| `QDRANT_API_KEY` | API-Key für Qdrant | Ja |
+| `MISTRAL_API_KEY` | API-Key für Mistral Embeddings | Ja |
+| `PORT` | Server-Port | Nein (Standard: 3000) |
+| `PUBLIC_URL` | Öffentliche URL für Config-Generierung | Nein |
+| `LOG_LEVEL` | Log-Level: DEBUG, INFO, WARN, ERROR | Nein (Standard: INFO) |
+
+---
+
+## MCP Client Konfiguration
+
+### Cursor / Claude Desktop
+
+Füge in deiner MCP-Konfiguration hinzu:
+
+```json
+{
+  "mcpServers": {
+    "gruenerator": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+Nach der Konfiguration kannst du Fragen stellen wie:
+
+- "Suche in den österreichischen Grünen-Programmen nach Klimapolitik"
+- "Was sagt das Grundsatzprogramm der deutschen Grünen zur Energiewende?"
+
+---
+
+## API Endpoints
+
+| Endpoint | Methode | Beschreibung |
+|----------|---------|--------------|
+| `/mcp` | POST | MCP Kommunikation |
+| `/mcp` | GET | SSE Stream |
+| `/mcp` | DELETE | Session beenden |
+| `/health` | GET | Health Check mit Cache- und Request-Statistiken |
+| `/metrics` | GET | Detaillierte Server-Metriken |
+| `/.well-known/mcp.json` | GET | Auto-Discovery Metadata |
+| `/config/:client` | GET | Client-Konfiguration generieren |
+| `/info` | GET | Server-Informationen |
+
+### Health Check Response
+
+```json
+{
+  "status": "ok",
+  "service": "gruenerator-mcp",
+  "version": "1.0.0",
+  "collections": ["oesterreich", "deutschland"],
+  "uptime": { "ms": 3600000, "hours": 1.0 },
+  "cache": {
+    "embeddingHitRate": "65%",
+    "searchHitRate": "42%"
+  },
+  "requests": { "total": 150, "searches": 120, "errors": 0 },
+  "performance": { "avgResponseTimeMs": 250, "cacheHitRate": "65%" }
+}
+```
+
+### Metrics Response
+
+```json
+{
+  "server": { "name": "gruenerator-mcp", "version": "1.0.0" },
+  "uptime": { "hours": 1.0 },
+  "requests": { "total": 150, "searches": 120 },
+  "breakdown": {
+    "byCollection": { "deutschland": 80, "oesterreich": 40 },
+    "bySearchMode": { "hybrid": 100, "vector": 15, "text": 5 }
+  },
+  "cache": {
+    "embeddings": { "entries": 50, "hitRate": "65%" },
+    "search": { "entries": 30, "hitRate": "42%" }
+  },
+  "memory": { "heapUsedMB": 45, "rssMB": 120 }
+}
+```
+
+---
+
+## Verfügbare Tools
+
+### `gruenerator_search`
+
+Durchsucht die Parteiprogramme mit Hybrid-, Vektor- oder Textsuche.
+
+**Parameter:**
+
+| Parameter | Typ | Beschreibung | Standard |
+|-----------|-----|--------------|----------|
+| `query` | string | Suchbegriff oder Frage | erforderlich |
+| `collection` | string | `oesterreich` oder `deutschland` | erforderlich |
+| `searchMode` | string | `hybrid`, `vector` oder `text` | `hybrid` |
+| `limit` | number | Maximale Anzahl Ergebnisse | 5 |
+| `filters` | object | Metadaten-Filter (documentType, title) | optional |
+| `useCache` | boolean | Cache verwenden | true |
+
+**Beispiel:**
+```json
+{
+  "query": "Klimaschutz und erneuerbare Energien",
+  "collection": "oesterreich",
+  "searchMode": "hybrid",
+  "limit": 5,
+  "filters": { "documentType": "wahlprogramm" }
+}
+```
+
+### `gruenerator_cache_stats`
+
+Zeigt Cache-Statistiken für Embeddings und Suchergebnisse.
+
+**Parameter:** Keine
+
+**Beispiel-Antwort:**
+```json
+{
+  "embeddings": { "entries": 50, "hits": 120, "misses": 30, "hitRate": "80%" },
+  "search": { "entries": 30, "hits": 80, "misses": 40, "hitRate": "67%" }
+}
+```
+
+### `get_client_config`
+
+Generiert fertige MCP-Konfigurationen für verschiedene Clients.
+
+**Parameter:**
+- `client` (string, erforderlich) - `claude`, `cursor` oder `vscode`
+
+---
+
+## MCP Resources
+
+Der Server stellt folgende Resources über das MCP-Protokoll bereit:
+
+| URI | Beschreibung |
+|-----|--------------|
+| `gruenerator://info` | Server-Informationen und Fähigkeiten |
+| `gruenerator://collections` | Liste aller verfügbaren Sammlungen |
+| `gruenerator://collections/oesterreich` | Details zur österreichischen Sammlung |
+| `gruenerator://collections/deutschland` | Details zur deutschen Sammlung |
+
+---
+
+## Suchmodi
+
+### Hybrid (Standard)
+Kombiniert Vektor- und Textsuche mit Reciprocal Rank Fusion (RRF). Beste Ergebnisse für die meisten Anfragen.
+
+### Vector
+Reine semantische Suche basierend auf Embeddings. Gut für konzeptuelle Fragen.
+
+### Text
+Klassische Textsuche mit deutschen Optimierungen. Gut für exakte Begriffe oder Namen.
 
 ---
 
