@@ -14,8 +14,11 @@ console.log('[Boot] Dependencies loaded');
 
 console.log('[Boot] Loading config...');
 import { config, validateConfig } from './config.js';
-import { searchTool } from './tools/search.js';
-import { clientConfigTool, generateClientConfigs } from './tools/clientConfig.js';
+import { searchTool, cacheStatsTool } from './tools/search.js';
+import { clientConfigTool } from './tools/clientConfig.js';
+import { getCacheStats } from './utils/cache.js';
+import { info, error, logSearch, getStats } from './utils/logger.js';
+import { getCollectionResources, getCollectionResource, getServerInfoResource, readServerInfoResource } from './resources/collections.js';
 console.log('[Boot] Config loaded');
 
 // Konfiguration validieren
@@ -23,8 +26,8 @@ console.log('[Config] Validating environment variables...');
 try {
   validateConfig();
   console.log('[Config] Validation successful');
-} catch (error) {
-  console.error(`[Config] ERROR: ${error.message}`);
+} catch (err) {
+  console.error(`[Config] ERROR: ${err.message}`);
   console.error('[Config] Required: QDRANT_URL, QDRANT_API_KEY, MISTRAL_API_KEY');
   process.exit(1);
 }
@@ -49,36 +52,118 @@ function createMcpServer(baseUrl) {
     version: '1.0.0'
   });
 
-  // Such-Tool registrieren mit Zod Schema
-  server.tool(
-    searchTool.name,
-    searchTool.inputSchema,
-    async ({ query, collection, limit }) => {
-      const result = await searchTool.handler({ query, collection, limit });
+  // === MCP RESOURCES ===
+
+  // List available resources
+  server.resource(
+    'gruenerator://collections',
+    'Verfügbare Dokumentsammlungen',
+    async () => {
+      const resources = await getCollectionResources();
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }
-        ]
+        contents: [{
+          uri: 'gruenerator://collections',
+          mimeType: 'application/json',
+          text: JSON.stringify({ collections: resources }, null, 2)
+        }]
       };
     }
   );
 
-  // Client-Config-Tool registrieren
+  // Server info resource
+  server.resource(
+    'gruenerator://info',
+    'Server-Informationen und Fähigkeiten',
+    () => readServerInfoResource()
+  );
+
+  // Dynamic collection resources
+  for (const [key, col] of Object.entries(config.collections)) {
+    server.resource(
+      `gruenerator://collections/${key}`,
+      `${col.displayName}: ${col.description}`,
+      async () => {
+        const resource = await getCollectionResource(`gruenerator://collections/${key}`);
+        return resource || {
+          contents: [{
+            uri: `gruenerator://collections/${key}`,
+            mimeType: 'application/json',
+            text: JSON.stringify({ error: 'Collection not found' })
+          }]
+        };
+      }
+    );
+  }
+
+  // === MCP TOOLS ===
+
+  // Search Tool with annotations
+  server.tool(
+    searchTool.name,
+    searchTool.inputSchema,
+    async ({ query, collection, searchMode = 'hybrid', limit = 5, filters, useCache = true }) => {
+      const startTime = Date.now();
+
+      try {
+        const result = await searchTool.handler({ query, collection, searchMode, limit, filters, useCache });
+        const responseTime = Date.now() - startTime;
+
+        // Log the search
+        logSearch(
+          query,
+          collection,
+          searchMode,
+          result.resultsCount || 0,
+          responseTime,
+          result.cached || false
+        );
+
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }],
+          isError: !!result.error
+        };
+      } catch (err) {
+        error('Search', `Search failed: ${err.message}`);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: true, message: err.message })
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Cache Stats Tool
+  server.tool(
+    cacheStatsTool.name,
+    cacheStatsTool.inputSchema,
+    async () => {
+      const result = await cacheStatsTool.handler();
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result, null, 2)
+        }]
+      };
+    }
+  );
+
+  // Client Config Tool
   server.tool(
     clientConfigTool.name,
     clientConfigTool.inputSchema,
     async ({ client }) => {
       const result = clientConfigTool.handler({ client }, baseUrl);
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result, null, 2)
-          }
-        ]
+        content: [{
+          type: 'text',
+          text: JSON.stringify(result, null, 2)
+        }]
       };
     }
   );
@@ -86,17 +171,54 @@ function createMcpServer(baseUrl) {
   return server;
 }
 
-// Health Check Endpoint
+// Health Check Endpoint with comprehensive metrics
 app.get('/health', (req, res) => {
+  const cacheStats = getCacheStats();
+  const serverStats = getStats();
+
   res.json({
     status: 'ok',
     service: 'gruenerator-mcp',
     version: '1.0.0',
-    collections: Object.keys(config.collections)
+    collections: Object.keys(config.collections),
+    uptime: serverStats.uptime,
+    cache: {
+      embeddingHitRate: cacheStats.embeddings.hitRate,
+      searchHitRate: cacheStats.search.hitRate,
+      embeddingEntries: cacheStats.embeddings.entries,
+      searchEntries: cacheStats.search.entries
+    },
+    requests: serverStats.requests,
+    performance: serverStats.performance
   });
 });
 
-// Auto-Discovery Endpoint (Standard für MCP-Clients)
+// Metrics endpoint (detailed stats)
+app.get('/metrics', (req, res) => {
+  const cacheStats = getCacheStats();
+  const serverStats = getStats();
+
+  res.json({
+    server: {
+      name: 'gruenerator-mcp',
+      version: '1.0.0',
+      nodeVersion: process.version,
+      environment: process.env.NODE_ENV || 'development'
+    },
+    uptime: serverStats.uptime,
+    requests: serverStats.requests,
+    performance: serverStats.performance,
+    breakdown: serverStats.breakdown,
+    cache: cacheStats,
+    memory: {
+      heapUsedMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      heapTotalMB: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+      rssMB: Math.round(process.memoryUsage().rss / 1024 / 1024)
+    }
+  });
+});
+
+// Auto-Discovery Endpoint
 app.get('/.well-known/mcp.json', (req, res) => {
   const baseUrl = getBaseUrl(req);
   res.json({
@@ -109,12 +231,27 @@ app.get('/.well-known/mcp.json', (req, res) => {
     tools: [
       {
         name: 'gruenerator_search',
-        description: 'Durchsucht Grüne Parteiprogramme (Österreich/Deutschland)'
+        description: 'Durchsucht Grüne Parteiprogramme mit hybrid/vector/text Suche',
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
+        name: 'gruenerator_cache_stats',
+        description: 'Zeigt Cache-Statistiken für die Suche',
+        annotations: { readOnlyHint: true, idempotentHint: true }
       },
       {
         name: 'get_client_config',
-        description: 'Generiert fertige MCP-Client-Konfigurationen'
+        description: 'Generiert fertige MCP-Client-Konfigurationen',
+        annotations: { readOnlyHint: true, idempotentHint: true }
       }
+    ],
+    resources: [
+      { uri: 'gruenerator://info', name: 'Server Info' },
+      { uri: 'gruenerator://collections', name: 'Alle Sammlungen' },
+      ...Object.entries(config.collections).map(([key, col]) => ({
+        uri: `gruenerator://collections/${key}`,
+        name: col.displayName
+      }))
     ],
     collections: Object.entries(config.collections).map(([key, col]) => ({
       id: key,
@@ -146,15 +283,19 @@ app.get('/config/:client', (req, res) => {
 // Server-Info Endpoint
 app.get('/info', (req, res) => {
   const baseUrl = getBaseUrl(req);
+  const serverStats = getStats();
+
   res.json({
     server: {
       name: 'gruenerator-mcp',
       version: '1.0.0',
-      description: 'MCP Server für Grüne Parteiprogramme (Deutschland & Österreich)'
+      description: 'MCP Server für Grüne Parteiprogramme (Deutschland & Österreich)',
+      uptime: serverStats.uptime
     },
     endpoints: {
       mcp: `${baseUrl}/mcp`,
       health: `${baseUrl}/health`,
+      metrics: `${baseUrl}/metrics`,
       discovery: `${baseUrl}/.well-known/mcp.json`,
       config: `${baseUrl}/config/:client`,
       info: `${baseUrl}/info`
@@ -162,14 +303,31 @@ app.get('/info', (req, res) => {
     tools: [
       {
         name: 'gruenerator_search',
-        description: 'Durchsucht Grüne Parteiprogramme',
-        collections: Object.keys(config.collections)
+        description: 'Durchsucht Grüne Parteiprogramme mit hybrid/vector/text Suche',
+        collections: Object.keys(config.collections),
+        searchModes: ['hybrid', 'vector', 'text'],
+        features: ['caching', 'metadata-filtering', 'german-optimization'],
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
+        name: 'gruenerator_cache_stats',
+        description: 'Zeigt Cache-Statistiken für Embeddings und Suche',
+        annotations: { readOnlyHint: true, idempotentHint: true }
       },
       {
         name: 'get_client_config',
         description: 'Generiert MCP-Client-Konfigurationen',
-        clients: ['claude', 'cursor', 'vscode']
+        clients: ['claude', 'cursor', 'vscode'],
+        annotations: { readOnlyHint: true, idempotentHint: true }
       }
+    ],
+    resources: [
+      { uri: 'gruenerator://info', description: 'Server-Informationen' },
+      { uri: 'gruenerator://collections', description: 'Alle verfügbaren Sammlungen' },
+      ...Object.entries(config.collections).map(([key, col]) => ({
+        uri: `gruenerator://collections/${key}`,
+        description: col.description
+      }))
     ],
     collections: Object.entries(config.collections).map(([key, col]) => ({
       id: key,
@@ -195,11 +353,11 @@ app.post('/mcp', async (req, res) => {
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (id) => {
         transports[id] = transport;
-        console.log(`[Session] Neue Session: ${id}`);
+        info('Session', `New session: ${id}`);
       },
       onsessionclosed: (id) => {
         delete transports[id];
-        console.log(`[Session] Session beendet: ${id}`);
+        info('Session', `Session closed: ${id}`);
       }
     });
 
@@ -257,7 +415,7 @@ app.listen(PORT, () => {
   const publicUrl = config.server.publicUrl;
 
   console.log('='.repeat(50));
-  console.log('Gruenerator MCP Server');
+  console.log('Gruenerator MCP Server v1.0.0');
   console.log('='.repeat(50));
   console.log(`Port: ${PORT}`);
   console.log(`Qdrant: ${config.qdrant.url}`);
@@ -269,9 +427,17 @@ app.listen(PORT, () => {
   console.log('Endpoints:');
   console.log(`  MCP:        ${localUrl}/mcp`);
   console.log(`  Health:     ${localUrl}/health`);
+  console.log(`  Metrics:    ${localUrl}/metrics`);
   console.log(`  Discovery:  ${localUrl}/.well-known/mcp.json`);
   console.log(`  Info:       ${localUrl}/info`);
   console.log(`  Config:     ${localUrl}/config/:client`);
   console.log('='.repeat(50));
-  console.log('[Boot] Server ready for requests');
+  console.log('Resources:');
+  console.log('  gruenerator://info');
+  console.log('  gruenerator://collections');
+  Object.keys(config.collections).forEach(key => {
+    console.log(`  gruenerator://collections/${key}`);
+  });
+  console.log('='.repeat(50));
+  info('Boot', 'Server ready for requests');
 });
