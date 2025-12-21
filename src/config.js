@@ -68,6 +68,16 @@ export const config = {
         article_type: { label: 'Artikeltyp', type: 'keyword' },
         category: { label: 'Kategorie', type: 'keyword' }
       }
+    },
+    'boell-stiftung': {
+      name: 'boell_stiftung_documents',
+      displayName: 'Heinrich-Böll-Stiftung',
+      description: 'Analysen, Dossiers und Atlanten der Heinrich-Böll-Stiftung',
+      filterableFields: {
+        content_type: { label: 'Inhaltstyp', type: 'keyword' },
+        topic: { label: 'Thema', type: 'keyword' },
+        region: { label: 'Region', type: 'keyword' }
+      }
     }
   }
 };
