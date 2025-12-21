@@ -12,13 +12,17 @@ import {
 
 export const searchTool = {
   name: 'gruenerator_search',
-  description: `Durchsucht Grüne Parteiprogramme mit semantischer und textbasierter Suche.
+  description: `Durchsucht Grüne Parteiprogramme und Inhalte mit semantischer und textbasierter Suche.
 
-WICHTIG: Du musst angeben ob du in österreichischen oder deutschen Dokumenten suchen willst.
+WICHTIG: Du musst eine Sammlung auswählen.
 
 Sammlungen:
 - oesterreich: Die Grünen Österreich (EU-Wahl, Grundsatz, Nationalrat)
-- deutschland: Bündnis 90/Die Grünen Grundsatzprogramm 2020
+- deutschland: Bündnis 90/Die Grünen (Grundsatzprogramm, EU-Wahlprogramm, Regierungsprogramm)
+- bundestagsfraktion: Grüne Bundestagsfraktion (Positionen, Fachtexte)
+- gruene-de: Grüne Deutschland (gruene.de Inhalte)
+- gruene-at: Grüne Österreich (gruene.at Inhalte)
+- kommunalwiki: KommunalWiki (Kommunalpolitik-Fachwissen)
 
 Suchmodi:
 - hybrid (empfohlen): Kombiniert semantische und textbasierte Suche für beste Ergebnisse
@@ -27,16 +31,22 @@ Suchmodi:
 
 Filter (optional):
 - documentType: Filtert nach Dokumenttyp (grundsatzprogramm, wahlprogramm, eu-wahlprogramm)
-- title: Filtert nach exaktem Dokumenttitel`,
+- title: Filtert nach exaktem Dokumenttitel
+- section: Filtert nach Bereich (für bundestagsfraktion, gruene-de, gruene-at)
+- article_type: Filtert nach Artikeltyp (für kommunalwiki)
+- category: Filtert nach Kategorie (für kommunalwiki)`,
 
   inputSchema: {
     query: z.string().describe('Suchbegriff oder Frage'),
-    collection: z.enum(['oesterreich', 'deutschland']).describe('PFLICHT: oesterreich oder deutschland'),
+    collection: z.enum(['oesterreich', 'deutschland', 'bundestagsfraktion', 'gruene-de', 'gruene-at', 'kommunalwiki']).describe('PFLICHT: Sammlung auswählen'),
     searchMode: z.enum(['hybrid', 'vector', 'text']).default('hybrid').describe('Suchmodus: hybrid (empfohlen), vector, oder text'),
     limit: z.number().default(5).describe('Maximale Anzahl Ergebnisse (1-20)'),
     filters: z.object({
       documentType: z.string().optional().describe('Dokumenttyp: grundsatzprogramm, wahlprogramm, eu-wahlprogramm'),
-      title: z.string().optional().describe('Exakter Dokumenttitel zum Filtern')
+      title: z.string().optional().describe('Exakter Dokumenttitel zum Filtern'),
+      section: z.string().optional().describe('Bereich: Positionen, Themen, Aktuelles, Fraktion, Presse'),
+      article_type: z.enum(['literatur', 'praxishilfe', 'faq', 'personalien', 'sachgebiet', 'artikel']).optional().describe('Artikeltyp (nur für kommunalwiki)'),
+      category: z.string().optional().describe('Thematische Kategorie (z.B. Haushalt, Umwelt)')
     }).optional().describe('Optionale Filter für die Suche'),
     useCache: z.boolean().default(true).describe('Cache verwenden für schnellere Ergebnisse')
   },
@@ -200,6 +210,27 @@ function buildQdrantFilter(filters) {
     must.push({
       key: 'title',
       match: { value: filters.title }
+    });
+  }
+
+  if (filters.section) {
+    must.push({
+      key: 'section',
+      match: { value: filters.section }
+    });
+  }
+
+  if (filters.article_type) {
+    must.push({
+      key: 'article_type',
+      match: { value: filters.article_type }
+    });
+  }
+
+  if (filters.category) {
+    must.push({
+      key: 'category',
+      match: { value: filters.category }
     });
   }
 
