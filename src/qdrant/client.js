@@ -91,6 +91,7 @@ export async function searchCollection(collectionName, embedding, limit = 5, fil
     score: hit.score,
     title: hit.payload?.title || hit.payload?.metadata?.title || 'Unbekannt',
     text: hit.payload?.chunk_text || '',
+    url: hit.payload?.url || hit.payload?.source_url || hit.payload?.metadata?.url || null,
     documentId: hit.payload?.document_id,
     filename: hit.payload?.filename || hit.payload?.metadata?.filename,
     qualityScore: hit.payload?.quality_score
@@ -403,6 +404,7 @@ export async function hybridSearchCollection(collectionName, embedding, query, l
     payload: hit.payload,
     title: hit.payload?.title || hit.payload?.metadata?.title || 'Unbekannt',
     text: hit.payload?.chunk_text || '',
+    url: hit.payload?.url || hit.payload?.source_url || hit.payload?.metadata?.url || null,
     qualityScore: hit.payload?.quality_score
   }));
 
@@ -444,6 +446,7 @@ export async function hybridSearchCollection(collectionName, embedding, query, l
       score: result.score * qualityBoost,
       title: result.title || result.payload?.title || 'Unbekannt',
       text: result.text || result.payload?.chunk_text || '',
+      url: result.url || result.payload?.url || result.payload?.source_url || result.payload?.metadata?.url || null,
       documentId: result.documentId || result.payload?.document_id,
       filename: result.filename || result.payload?.filename,
       searchMethod: result.searchMethod,
@@ -474,6 +477,7 @@ export async function textSearchCollection(collectionName, query, limit = 5, fil
     score: result.score,
     title: result.payload?.title || result.payload?.metadata?.title || 'Unbekannt',
     text: result.payload?.chunk_text || '',
+    url: result.payload?.url || result.payload?.source_url || result.payload?.metadata?.url || null,
     documentId: result.payload?.document_id,
     filename: result.payload?.filename || result.payload?.metadata?.filename,
     searchMethod: 'text',

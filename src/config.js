@@ -25,7 +25,7 @@ export const config = {
       displayName: 'Die Grünen Österreich',
       description: 'EU-Wahlprogramm, Grundsatzprogramm, Nationalratswahl-Programm',
       filterableFields: {
-        title: { label: 'Programm', type: 'keyword' }
+        primary_category: { label: 'Programm', type: 'keyword' }
       }
     },
     deutschland: {
@@ -33,7 +33,7 @@ export const config = {
       displayName: 'Bündnis 90/Die Grünen',
       description: 'Grundsatzprogramm 2020, EU-Wahlprogramm 2024, Regierungsprogramm 2025',
       filterableFields: {
-        title: { label: 'Programm', type: 'keyword' }
+        primary_category: { label: 'Programm', type: 'keyword' }
       }
     },
     bundestagsfraktion: {
@@ -41,7 +41,7 @@ export const config = {
       displayName: 'Grüne Bundestagsfraktion',
       description: 'Fachtexte, Ziele und Positionen von gruene-bundestag.de',
       filterableFields: {
-        section: { label: 'Bereich', type: 'keyword' }
+        primary_category: { label: 'Bereich', type: 'keyword' }
       }
     },
     'gruene-de': {
@@ -49,7 +49,7 @@ export const config = {
       displayName: 'Grüne Deutschland (gruene.de)',
       description: 'Inhalte von gruene.de – Positionen, Themen und Aktuelles',
       filterableFields: {
-        section: { label: 'Bereich', type: 'keyword' }
+        primary_category: { label: 'Bereich', type: 'keyword' }
       }
     },
     'gruene-at': {
@@ -57,7 +57,7 @@ export const config = {
       displayName: 'Grüne Österreich (gruene.at)',
       description: 'Inhalte von gruene.at – Positionen, Themen und Aktuelles',
       filterableFields: {
-        section: { label: 'Bereich', type: 'keyword' }
+        primary_category: { label: 'Bereich', type: 'keyword' }
       }
     },
     kommunalwiki: {
@@ -65,8 +65,8 @@ export const config = {
       displayName: 'KommunalWiki',
       description: 'Fachwissen zur Kommunalpolitik (Heinrich-Böll-Stiftung)',
       filterableFields: {
-        article_type: { label: 'Artikeltyp', type: 'keyword' },
-        category: { label: 'Kategorie', type: 'keyword' }
+        content_type: { label: 'Artikeltyp', type: 'keyword' },
+        primary_category: { label: 'Kategorie', type: 'keyword' }
       }
     },
     'boell-stiftung': {
@@ -75,8 +75,7 @@ export const config = {
       description: 'Analysen, Dossiers und Atlanten der Heinrich-Böll-Stiftung',
       filterableFields: {
         content_type: { label: 'Inhaltstyp', type: 'keyword' },
-        topic: { label: 'Thema', type: 'keyword' },
-        region: { label: 'Region', type: 'keyword' }
+        primary_category: { label: 'Thema', type: 'keyword' }
       }
     }
   }

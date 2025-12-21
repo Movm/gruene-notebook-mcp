@@ -21,8 +21,8 @@ WICHTIG: Rufe dieses Tool IMMER auf BEVOR du gruenerator_search mit Filtern verw
 
 1. Nutzer: "Suche Praxishilfen zum Thema Haushalt im Kommunalwiki"
 2. Du rufst auf: gruenerator_get_filters({ collection: "kommunalwiki" })
-3. Du erhältst: { article_type: ["praxishilfe", ...], category: ["Haushalt", ...] }
-4. Du rufst auf: gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { article_type: "praxishilfe", category: "Haushalt" } })`,
+3. Du erhältst: { content_type: ["praxishilfe", ...], primary_category: ["Haushalt", ...] }
+4. Du rufst auf: gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { content_type: "praxishilfe", primary_category: "Haushalt" } })`,
 
   inputSchema: {
     collection: z.enum([

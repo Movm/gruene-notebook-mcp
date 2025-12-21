@@ -41,6 +41,12 @@ Haupttool für die Suche.
 - limit: 1-20 Ergebnisse (Standard: 5)
 - filters: Nur nach Aufruf von gruenerator_get_filters!
 
+**Rückgabe pro Ergebnis:**
+- source: Titel/Name des Dokuments
+- url: Link zur Originalquelle (wenn verfügbar)
+- excerpt: Textauszug
+- relevance: Relevanz in Prozent
+
 ### 2. gruenerator_get_filters
 **IMMER aufrufen bevor du Filter verwendest!**
 
@@ -63,16 +69,15 @@ Nutzer: "Suche in Deutschland und Österreich nach Klimaschutz"
 ### Beispiel 3: Gefilterte Suche
 Nutzer: "Nur Praxishilfen zum Thema Haushalt im Kommunalwiki"
 → gruenerator_get_filters({ collection: "kommunalwiki" })
-→ Ergebnis: { article_type: ["praxishilfe", ...], category: ["Haushalt", ...] }
-→ gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { article_type: "praxishilfe", category: "Haushalt" } })
+→ Ergebnis: { content_type: ["praxishilfe", ...], primary_category: ["Haushalt", ...] }
+→ gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { content_type: "praxishilfe", primary_category: "Haushalt" } })
 
 ## Filter nach Sammlung
 
 | Sammlung | Filter |
 |----------|--------|
-| oesterreich, deutschland | title |
-| bundestagsfraktion, gruene-de, gruene-at | section |
-| kommunalwiki, boell-stiftung | article_type, category |
+| alle Sammlungen | primary_category |
+| kommunalwiki, boell-stiftung | content_type |
 `;
 
   return {

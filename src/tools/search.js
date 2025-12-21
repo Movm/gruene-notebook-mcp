@@ -41,9 +41,8 @@ WICHTIG: Rufe ZUERST gruenerator_get_filters auf, um gültige Filterwerte zu erf
 
 | Sammlung | Verfügbare Filter |
 |----------|-------------------|
-| oesterreich, deutschland | title (Programmname) |
-| bundestagsfraktion, gruene-de, gruene-at | section (Bereich) |
-| kommunalwiki, boell-stiftung | article_type, category |
+| alle Sammlungen | primary_category (Hauptkategorie) |
+| kommunalwiki, boell-stiftung | content_type (Inhaltstyp) |
 
 ## Beispiele
 
@@ -51,7 +50,7 @@ Suche in kommunalwiki nach AfD:
 { "query": "AfD Umgang", "collection": "kommunalwiki" }
 
 Suche mit Filter (NACH Aufruf von gruenerator_get_filters):
-{ "query": "Klimaschutz", "collection": "kommunalwiki", "filters": { "article_type": "praxishilfe" } }`,
+{ "query": "Klimaschutz", "collection": "kommunalwiki", "filters": { "content_type": "praxishilfe" } }`,
 
   inputSchema: {
     query: z.string().describe('Suchbegriff oder Frage auf Deutsch'),
@@ -59,10 +58,8 @@ Suche mit Filter (NACH Aufruf von gruenerator_get_filters):
     searchMode: z.enum(['hybrid', 'vector', 'text']).default('hybrid').describe('hybrid=beste Ergebnisse, vector=semantisch, text=exakte Begriffe'),
     limit: z.number().min(1).max(20).default(5).describe('Anzahl Ergebnisse (1-20)'),
     filters: z.object({
-      title: z.string().optional().describe('Exakter Dokumenttitel (für oesterreich, deutschland)'),
-      section: z.string().optional().describe('Bereich (für bundestagsfraktion, gruene-de, gruene-at)'),
-      article_type: z.string().optional().describe('Artikeltyp (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!'),
-      category: z.string().optional().describe('Kategorie (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!')
+      primary_category: z.string().optional().describe('Hauptkategorie (alle Sammlungen) - erst gruenerator_get_filters aufrufen!'),
+      content_type: z.string().optional().describe('Inhaltstyp (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!')
     }).optional().describe('Filter - IMMER erst gruenerator_get_filters aufrufen um gültige Werte zu erhalten'),
     useCache: z.boolean().default(true).describe('Cache für schnellere Ergebnisse')
   },
@@ -183,6 +180,7 @@ Suche mit Filter (NACH Aufruf von gruenerator_get_filters):
           rank: i + 1,
           relevance: `${Math.round(r.score * 100)}%`,
           source: r.title,
+          url: r.url || null,
           excerpt: r.text.length > 800 ? r.text.substring(0, 800) + '...' : r.text,
           searchMethod: r.searchMethod || searchMode
         })),
@@ -216,38 +214,17 @@ function buildQdrantFilter(filters) {
 
   const must = [];
 
-  if (filters.documentType) {
+  if (filters.primary_category) {
     must.push({
-      key: 'document_type',
-      match: { value: filters.documentType }
+      key: 'primary_category',
+      match: { value: filters.primary_category }
     });
   }
 
-  if (filters.title) {
+  if (filters.content_type) {
     must.push({
-      key: 'title',
-      match: { value: filters.title }
-    });
-  }
-
-  if (filters.section) {
-    must.push({
-      key: 'section',
-      match: { value: filters.section }
-    });
-  }
-
-  if (filters.article_type) {
-    must.push({
-      key: 'article_type',
-      match: { value: filters.article_type }
-    });
-  }
-
-  if (filters.category) {
-    must.push({
-      key: 'category',
-      match: { value: filters.category }
+      key: 'content_type',
+      match: { value: filters.content_type }
     });
   }
 
