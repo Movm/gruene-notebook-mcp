@@ -45,6 +45,7 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that g
 | `gruene-de` | gruene.de website: Positions, topics, and news | `section` |
 | `gruene-at` | gruene.at website: Positions, topics, and news | `section` |
 | `kommunalwiki` | KommunalWiki: Municipal politics knowledge (Heinrich Böll Foundation) | `article_type`, `category` |
+| `boell-stiftung` | Heinrich-Böll-Stiftung: Analyses, dossiers, and atlases | `content_type`, `topic`, `region` |
 
 ## Prerequisites
 
@@ -135,6 +136,7 @@ After configuration, you can ask questions like:
 - "What does the German Green basic program say about energy transition?"
 - "Find municipal politics guidance on waste management in KommunalWiki"
 - "What are the Bundestagsfraktion's positions on renewable energy?"
+- "Search Böll-Stiftung for analyses on feminism and gender equality"
 
 ## API Reference
 
@@ -158,7 +160,7 @@ After configuration, you can ask questions like:
   "status": "ok",
   "service": "gruenerator-mcp",
   "version": "1.0.0",
-  "collections": ["oesterreich", "deutschland", "bundestagsfraktion", "gruene-de", "gruene-at", "kommunalwiki"],
+  "collections": ["oesterreich", "deutschland", "bundestagsfraktion", "gruene-de", "gruene-at", "kommunalwiki", "boell-stiftung"],
   "uptime": { "ms": 3600000, "hours": 1.0 },
   "cache": {
     "embeddingHitRate": "65%",
@@ -216,6 +218,9 @@ Searches party programs and content with hybrid, vector, or text search.
 | `section` | bundestagsfraktion, gruene-de, gruene-at | Content section (Positionen, Themen, etc.) |
 | `article_type` | kommunalwiki | Article type (literatur, praxishilfe, faq, etc.) |
 | `category` | kommunalwiki | Thematic category (Haushalt, Umwelt, etc.) |
+| `content_type` | boell-stiftung | Content type (artikel, dossier, atlas, schwerpunkt) |
+| `topic` | boell-stiftung | Topic (klima, feminismus, migration, digitalisierung, etc.) |
+| `region` | boell-stiftung | Geographic region (afrika, europa, asien, lateinamerika, etc.) |
 
 **Example:**
 ```json
@@ -291,7 +296,7 @@ The server provides the following resources via MCP protocol:
 | `gruenerator://system-prompt` | **Read first!** Usage instructions for AI assistants |
 | `gruenerator://info` | Server information and capabilities |
 | `gruenerator://collections` | List of all available collections |
-| `gruenerator://collections/{key}` | Details of a specific collection (oesterreich, deutschland, bundestagsfraktion, gruene-de, gruene-at, kommunalwiki) |
+| `gruenerator://collections/{key}` | Details of a specific collection (oesterreich, deutschland, bundestagsfraktion, gruene-de, gruene-at, kommunalwiki, boell-stiftung) |
 
 ## Search Modes
 
@@ -324,6 +329,7 @@ Please ensure your PR:
 - [Mistral AI](https://mistral.ai/) - Embedding generation
 - [Die Grünen Österreich](https://www.gruene.at/) & [Bündnis 90/Die Grünen](https://www.gruene.de/) - Source documents
 - [Grüne Bundestagsfraktion](https://www.gruene-bundestag.de/) - Parliamentary group content
+- [Heinrich-Böll-Stiftung](https://www.boell.de/) - Political analyses, dossiers, and atlases
 - [Heinrich-Böll-Stiftung KommunalWiki](https://kommunalwiki.boell.de/) - Municipal politics knowledge base
 
 ## License
