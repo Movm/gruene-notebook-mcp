@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/Movm/Gruenerator-MCP/compare/v1.0.0...v1.1.0) (2025-12-21)
+
+
+### Features
+
+* **server:** Add ChatGPT Apps SDK compatibility ([33ecb6e](https://github.com/Movm/Gruenerator-MCP/commit/33ecb6eae78e705e82df5e31c9921aebbc374a54))
+
 # 1.0.0 (2025-12-21)
 
 

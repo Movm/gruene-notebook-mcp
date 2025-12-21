@@ -1,6 +1,6 @@
 {
   "name": "gruenerator-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Gruenerator MCP Server - Suche in Grünen Parteiprogrammen (DE/AT)",
   "type": "module",
   "main": "src/index.js",
