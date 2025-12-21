@@ -25,7 +25,10 @@ export async function getCollectionResources() {
           collectionId: key,
           qdrantCollection: col.name,
           pointsCount: info.pointsCount || 0,
-          status: info.status || 'unknown'
+          status: info.status || 'unknown',
+          filterableFields: col.filterableFields
+            ? Object.keys(col.filterableFields)
+            : []
         }
       });
     } catch (err) {
@@ -84,12 +87,22 @@ export async function getCollectionResource(uri) {
             status: info.status || 'unknown'
           },
           searchModes: ['hybrid', 'vector', 'text'],
+          filterableFields: col.filterableFields
+            ? Object.entries(col.filterableFields).map(([field, cfg]) => ({
+                field,
+                label: cfg.label,
+                type: cfg.type
+              }))
+            : [],
           features: [
             'Hybrid-Suche (Vector + Text)',
             'Deutsche Umlaut-Unterstützung',
             'Qualitäts-gewichtete Ergebnisse',
             'Semantic Caching',
-            'Metadaten-Filter'
+            'Metadaten-Filter',
+            ...(col.filterableFields
+              ? [`Filter: ${Object.keys(col.filterableFields).join(', ')}`]
+              : [])
           ]
         }, null, 2)
       }]
@@ -151,6 +164,7 @@ export function readServerInfoResource() {
         },
         tools: [
           { name: 'gruenerator_search', readOnly: true },
+          { name: 'gruenerator_get_filters', readOnly: true },
           { name: 'gruenerator_cache_stats', readOnly: true },
           { name: 'get_client_config', readOnly: true }
         ]
