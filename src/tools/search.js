@@ -10,53 +10,70 @@ import {
   getCacheStats
 } from '../utils/cache.js';
 
+// All available collection keys for validation
+const COLLECTION_KEYS = ['oesterreich', 'deutschland', 'bundestagsfraktion', 'gruene-de', 'gruene-at', 'kommunalwiki', 'boell-stiftung'];
+
 export const searchTool = {
   name: 'gruenerator_search',
   description: `Durchsucht Grüne Parteiprogramme und Inhalte mit semantischer und textbasierter Suche.
 
-WICHTIG: Du musst eine Sammlung auswählen.
+## REGELN FÜR DIE SAMMLUNGSAUSWAHL
 
-Sammlungen:
-- oesterreich: Die Grünen Österreich (EU-Wahl, Grundsatz, Nationalrat)
-- deutschland: Bündnis 90/Die Grünen (Grundsatzprogramm, EU-Wahlprogramm, Regierungsprogramm)
-- bundestagsfraktion: Grüne Bundestagsfraktion (Positionen, Fachtexte)
-- gruene-de: Grüne Deutschland (gruene.de Inhalte)
-- gruene-at: Grüne Österreich (gruene.at Inhalte)
-- kommunalwiki: KommunalWiki (Kommunalpolitik-Fachwissen)
+1. Wenn der Nutzer eine BESTIMMTE Sammlung nennt (z.B. "kommunalwiki", "deutschland") → verwende GENAU diese
+2. Wenn der Nutzer MEHRERE Sammlungen will → rufe dieses Tool MEHRFACH auf (einmal pro Sammlung)
+3. Wenn UNKLAR → frage nach oder nutze die passendste Sammlung
 
-Suchmodi:
-- hybrid (empfohlen): Kombiniert semantische und textbasierte Suche für beste Ergebnisse
-- vector: Rein semantische Suche basierend auf Bedeutung
-- text: Rein textbasierte Suche mit deutscher Umlaut-Unterstützung
+## Sammlungen
 
-Filter (optional):
-- documentType: Filtert nach Dokumenttyp (grundsatzprogramm, wahlprogramm, eu-wahlprogramm)
-- title: Filtert nach exaktem Dokumenttitel
-- section: Filtert nach Bereich (für bundestagsfraktion, gruene-de, gruene-at)
-- article_type: Filtert nach Artikeltyp (für kommunalwiki)
-- category: Filtert nach Kategorie (für kommunalwiki)`,
+| ID | Name | Inhalt |
+|----|------|--------|
+| oesterreich | Die Grünen Österreich | EU-Wahl, Grundsatz, Nationalrat Programme |
+| deutschland | Bündnis 90/Die Grünen | Grundsatzprogramm 2020, EU-Wahl 2024, Regierung 2025 |
+| bundestagsfraktion | Grüne Bundestagsfraktion | Positionen, Fachtexte von gruene-bundestag.de |
+| gruene-de | Grüne Deutschland | Inhalte von gruene.de |
+| gruene-at | Grüne Österreich | Inhalte von gruene.at |
+| kommunalwiki | KommunalWiki | Kommunalpolitik-Fachwissen (Böll-Stiftung) |
+| boell-stiftung | Heinrich-Böll-Stiftung | Analysen, Dossiers, Atlanten |
+
+## Filter
+
+WICHTIG: Rufe ZUERST gruenerator_get_filters auf, um gültige Filterwerte zu erfahren!
+
+| Sammlung | Verfügbare Filter |
+|----------|-------------------|
+| oesterreich, deutschland | title (Programmname) |
+| bundestagsfraktion, gruene-de, gruene-at | section (Bereich) |
+| kommunalwiki, boell-stiftung | article_type, category |
+
+## Beispiele
+
+Suche in kommunalwiki nach AfD:
+{ "query": "AfD Umgang", "collection": "kommunalwiki" }
+
+Suche mit Filter (NACH Aufruf von gruenerator_get_filters):
+{ "query": "Klimaschutz", "collection": "kommunalwiki", "filters": { "article_type": "praxishilfe" } }`,
 
   inputSchema: {
-    query: z.string().describe('Suchbegriff oder Frage'),
-    collection: z.enum(['oesterreich', 'deutschland', 'bundestagsfraktion', 'gruene-de', 'gruene-at', 'kommunalwiki']).describe('PFLICHT: Sammlung auswählen'),
-    searchMode: z.enum(['hybrid', 'vector', 'text']).default('hybrid').describe('Suchmodus: hybrid (empfohlen), vector, oder text'),
-    limit: z.number().default(5).describe('Maximale Anzahl Ergebnisse (1-20)'),
+    query: z.string().describe('Suchbegriff oder Frage auf Deutsch'),
+    collection: z.enum(COLLECTION_KEYS).describe('Exakte Sammlung wie vom Nutzer genannt. Bei mehreren Sammlungen: Tool mehrfach aufrufen.'),
+    searchMode: z.enum(['hybrid', 'vector', 'text']).default('hybrid').describe('hybrid=beste Ergebnisse, vector=semantisch, text=exakte Begriffe'),
+    limit: z.number().min(1).max(20).default(5).describe('Anzahl Ergebnisse (1-20)'),
     filters: z.object({
-      documentType: z.string().optional().describe('Dokumenttyp: grundsatzprogramm, wahlprogramm, eu-wahlprogramm'),
-      title: z.string().optional().describe('Exakter Dokumenttitel zum Filtern'),
-      section: z.string().optional().describe('Bereich: Positionen, Themen, Aktuelles, Fraktion, Presse'),
-      article_type: z.enum(['literatur', 'praxishilfe', 'faq', 'personalien', 'sachgebiet', 'artikel']).optional().describe('Artikeltyp (nur für kommunalwiki)'),
-      category: z.string().optional().describe('Thematische Kategorie (z.B. Haushalt, Umwelt)')
-    }).optional().describe('Optionale Filter für die Suche'),
-    useCache: z.boolean().default(true).describe('Cache verwenden für schnellere Ergebnisse')
+      title: z.string().optional().describe('Exakter Dokumenttitel (für oesterreich, deutschland)'),
+      section: z.string().optional().describe('Bereich (für bundestagsfraktion, gruene-de, gruene-at)'),
+      article_type: z.string().optional().describe('Artikeltyp (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!'),
+      category: z.string().optional().describe('Kategorie (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!')
+    }).optional().describe('Filter - IMMER erst gruenerator_get_filters aufrufen um gültige Werte zu erhalten'),
+    useCache: z.boolean().default(true).describe('Cache für schnellere Ergebnisse')
   },
 
   async handler({ query, collection, searchMode = 'hybrid', limit = 5, filters = null, useCache = true }) {
     const collectionConfig = config.collections[collection];
     if (!collectionConfig) {
+      const available = Object.keys(config.collections).join(', ');
       return {
         error: true,
-        message: `Unbekannte Sammlung: ${collection}. Verfügbar: oesterreich, deutschland`
+        message: `Unbekannte Sammlung: ${collection}. Verfügbar: ${available}`
       };
     }
 
