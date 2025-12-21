@@ -31,15 +31,20 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that g
 - **German Optimization** - Umlaut handling (ä→ae, ö→oe, etc.) and query variants
 - **Quality Scoring** - Results weighted by document quality
 - **Semantic Caching** - Fast responses for repeated queries
-- **Metadata Filtering** - Filter by document type, title, etc.
-- **MCP Resources** - Direct access to collection information
+- **Metadata Filtering** - Filter by document type, section, category, etc.
+- **Filter Discovery** - Query available filter values before searching
+- **MCP Resources** - Direct access to collection information and AI guidance
 
 ## Available Document Collections
 
-| Collection | Description |
-|------------|-------------|
-| `oesterreich` | Die Grünen Austria: EU Election Program, Basic Program, National Council Election Program |
-| `deutschland` | Bündnis 90/Die Grünen: Basic Program 2020 |
+| Collection | Description | Filters |
+|------------|-------------|---------|
+| `oesterreich` | Die Grünen Austria: EU Election, Basic Program, National Council | `title` |
+| `deutschland` | Bündnis 90/Die Grünen: Basic Program, EU Election, Government Program | `title` |
+| `bundestagsfraktion` | Green Parliamentary Group: Positions and expert content | `section` |
+| `gruene-de` | gruene.de website: Positions, topics, and news | `section` |
+| `gruene-at` | gruene.at website: Positions, topics, and news | `section` |
+| `kommunalwiki` | KommunalWiki: Municipal politics knowledge (Heinrich Böll Foundation) | `article_type`, `category` |
 
 ## Prerequisites
 
@@ -128,6 +133,8 @@ After configuration, you can ask questions like:
 
 - "Search the Austrian Green programs for climate policy"
 - "What does the German Green basic program say about energy transition?"
+- "Find municipal politics guidance on waste management in KommunalWiki"
+- "What are the Bundestagsfraktion's positions on renewable energy?"
 
 ## API Reference
 
@@ -151,7 +158,7 @@ After configuration, you can ask questions like:
   "status": "ok",
   "service": "gruenerator-mcp",
   "version": "1.0.0",
-  "collections": ["oesterreich", "deutschland"],
+  "collections": ["oesterreich", "deutschland", "bundestagsfraktion", "gruene-de", "gruene-at", "kommunalwiki"],
   "uptime": { "ms": 3600000, "hours": 1.0 },
   "cache": {
     "embeddingHitRate": "65%",
@@ -170,7 +177,7 @@ After configuration, you can ask questions like:
   "uptime": { "hours": 1.0 },
   "requests": { "total": 150, "searches": 120 },
   "breakdown": {
-    "byCollection": { "deutschland": 80, "oesterreich": 40 },
+    "byCollection": { "deutschland": 40, "oesterreich": 30, "kommunalwiki": 25, "bundestagsfraktion": 20, "gruene-de": 15, "gruene-at": 20 },
     "bySearchMode": { "hybrid": 100, "vector": 15, "text": 5 }
   },
   "cache": {
@@ -187,27 +194,70 @@ After configuration, you can ask questions like:
 
 #### `gruenerator_search`
 
-Searches party programs with hybrid, vector, or text search.
+Searches party programs and content with hybrid, vector, or text search.
 
 **Parameters:**
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
 | `query` | string | Search term or question | required |
-| `collection` | string | `oesterreich` or `deutschland` | required |
+| `collection` | string | Collection to search (see table above) | required |
 | `searchMode` | string | `hybrid`, `vector`, or `text` | `hybrid` |
-| `limit` | number | Maximum number of results | 5 |
-| `filters` | object | Metadata filters (documentType, title) | optional |
+| `limit` | number | Maximum number of results (1-20) | 5 |
+| `filters` | object | Metadata filters (see below) | optional |
 | `useCache` | boolean | Use cache | true |
+
+**Available Filters by Collection:**
+
+| Filter | Collections | Description |
+|--------|-------------|-------------|
+| `documentType` | oesterreich, deutschland | Document type (grundsatzprogramm, wahlprogramm, eu-wahlprogramm) |
+| `title` | oesterreich, deutschland | Exact document title |
+| `section` | bundestagsfraktion, gruene-de, gruene-at | Content section (Positionen, Themen, etc.) |
+| `article_type` | kommunalwiki | Article type (literatur, praxishilfe, faq, etc.) |
+| `category` | kommunalwiki | Thematic category (Haushalt, Umwelt, etc.) |
 
 **Example:**
 ```json
 {
   "query": "climate protection and renewable energy",
-  "collection": "oesterreich",
+  "collection": "kommunalwiki",
   "searchMode": "hybrid",
   "limit": 5,
-  "filters": { "documentType": "wahlprogramm" }
+  "filters": { "article_type": "praxishilfe", "category": "Umwelt" }
+}
+```
+
+#### `gruenerator_get_filters`
+
+Discovers available filter values for a collection. Use this before filtering to know valid values.
+
+**Parameters:**
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `collection` | string | Collection to get filters for | required |
+
+**Example Response:**
+```json
+{
+  "collection": "KommunalWiki",
+  "collectionId": "kommunalwiki",
+  "description": "Municipal politics knowledge (Heinrich Böll Foundation)",
+  "filters": {
+    "article_type": {
+      "label": "Article Type",
+      "type": "keyword",
+      "values": ["literatur", "praxishilfe", "faq", "sachgebiet"],
+      "count": 4
+    },
+    "category": {
+      "label": "Category",
+      "type": "keyword",
+      "values": ["Haushalt", "Umwelt", "Verkehr", "..."],
+      "count": 25
+    }
+  }
 }
 ```
 
@@ -238,10 +288,10 @@ The server provides the following resources via MCP protocol:
 
 | URI | Description |
 |-----|-------------|
+| `gruenerator://system-prompt` | **Read first!** Usage instructions for AI assistants |
 | `gruenerator://info` | Server information and capabilities |
 | `gruenerator://collections` | List of all available collections |
-| `gruenerator://collections/oesterreich` | Details of the Austrian collection |
-| `gruenerator://collections/deutschland` | Details of the German collection |
+| `gruenerator://collections/{key}` | Details of a specific collection (oesterreich, deutschland, bundestagsfraktion, gruene-de, gruene-at, kommunalwiki) |
 
 ## Search Modes
 
@@ -273,6 +323,8 @@ Please ensure your PR:
 - [Qdrant](https://qdrant.tech/) - Vector database for semantic search
 - [Mistral AI](https://mistral.ai/) - Embedding generation
 - [Die Grünen Österreich](https://www.gruene.at/) & [Bündnis 90/Die Grünen](https://www.gruene.de/) - Source documents
+- [Grüne Bundestagsfraktion](https://www.gruene-bundestag.de/) - Parliamentary group content
+- [Heinrich-Böll-Stiftung KommunalWiki](https://kommunalwiki.boell.de/) - Municipal politics knowledge base
 
 ## License
 
