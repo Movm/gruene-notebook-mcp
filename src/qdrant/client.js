@@ -498,3 +498,39 @@ export async function getCollectionInfo(collectionName) {
     };
   }
 }
+
+/**
+ * Get unique values for a specific field in a collection
+ * Used for filter discovery - returns all distinct values for a given field
+ */
+export async function getUniqueFieldValues(collectionName, fieldName, limit = 100) {
+  const qdrant = await getQdrantClient();
+
+  try {
+    const scrollResult = await qdrant.scroll(collectionName, {
+      limit: 1000,
+      with_payload: { include: [fieldName] },
+      with_vector: false
+    });
+
+    const values = new Set();
+    for (const point of scrollResult.points || []) {
+      const value = point.payload?.[fieldName];
+      if (value !== undefined && value !== null && value !== '') {
+        values.add(value);
+      }
+    }
+
+    const sortedValues = Array.from(values).sort((a, b) => {
+      if (typeof a === 'string' && typeof b === 'string') {
+        return a.localeCompare(b, 'de');
+      }
+      return String(a).localeCompare(String(b));
+    });
+
+    return sortedValues.slice(0, limit);
+  } catch (error) {
+    console.error(`[Qdrant] Error fetching unique values for ${fieldName}:`, error.message);
+    return [];
+  }
+}
