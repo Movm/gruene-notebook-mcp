@@ -16,9 +16,11 @@ console.log('[Boot] Loading config...');
 import { config, validateConfig } from './config.js';
 import { searchTool, cacheStatsTool } from './tools/search.js';
 import { clientConfigTool } from './tools/clientConfig.js';
+import { filtersTool } from './tools/filters.js';
 import { getCacheStats } from './utils/cache.js';
 import { info, error, logSearch, getStats } from './utils/logger.js';
 import { getCollectionResources, getCollectionResource, getServerInfoResource, readServerInfoResource } from './resources/collections.js';
+import { getSystemPromptResource } from './resources/systemPrompt.js';
 console.log('[Boot] Config loaded');
 
 // Konfiguration validieren
@@ -75,6 +77,13 @@ function createMcpServer(baseUrl) {
     'gruenerator://info',
     'Server-Informationen und Fähigkeiten',
     () => readServerInfoResource()
+  );
+
+  // System prompt resource - AI systems should read this first
+  server.resource(
+    'gruenerator://system-prompt',
+    'Anleitung zur Nutzung des MCP Servers (für AI-Assistenten)',
+    () => getSystemPromptResource()
   );
 
   // Dynamic collection resources
@@ -168,6 +177,33 @@ function createMcpServer(baseUrl) {
     }
   );
 
+  // Filters Tool
+  server.tool(
+    filtersTool.name,
+    filtersTool.inputSchema,
+    async ({ collection }) => {
+      try {
+        const result = await filtersTool.handler({ collection });
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }],
+          isError: !!result.error
+        };
+      } catch (err) {
+        error('Filters', `Filter fetch failed: ${err.message}`);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: true, message: err.message })
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
   return server;
 }
 
@@ -235,6 +271,11 @@ app.get('/.well-known/mcp.json', (req, res) => {
         annotations: { readOnlyHint: true, idempotentHint: true }
       },
       {
+        name: 'gruenerator_get_filters',
+        description: 'Gibt verfügbare Filterwerte für eine Sammlung zurück',
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
         name: 'gruenerator_cache_stats',
         description: 'Zeigt Cache-Statistiken für die Suche',
         annotations: { readOnlyHint: true, idempotentHint: true }
@@ -246,6 +287,7 @@ app.get('/.well-known/mcp.json', (req, res) => {
       }
     ],
     resources: [
+      { uri: 'gruenerator://system-prompt', name: 'Anleitung für AI-Assistenten', priority: 'high' },
       { uri: 'gruenerator://info', name: 'Server Info' },
       { uri: 'gruenerator://collections', name: 'Alle Sammlungen' },
       ...Object.entries(config.collections).map(([key, col]) => ({
@@ -310,6 +352,12 @@ app.get('/info', (req, res) => {
         annotations: { readOnlyHint: true, idempotentHint: true }
       },
       {
+        name: 'gruenerator_get_filters',
+        description: 'Gibt verfügbare Filterwerte für eine Sammlung zurück',
+        collections: Object.keys(config.collections),
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
         name: 'gruenerator_cache_stats',
         description: 'Zeigt Cache-Statistiken für Embeddings und Suche',
         annotations: { readOnlyHint: true, idempotentHint: true }
@@ -322,6 +370,7 @@ app.get('/info', (req, res) => {
       }
     ],
     resources: [
+      { uri: 'gruenerator://system-prompt', description: 'Anleitung für AI-Assistenten (zuerst lesen!)' },
       { uri: 'gruenerator://info', description: 'Server-Informationen' },
       { uri: 'gruenerator://collections', description: 'Alle verfügbaren Sammlungen' },
       ...Object.entries(config.collections).map(([key, col]) => ({
@@ -433,6 +482,7 @@ app.listen(PORT, () => {
   console.log(`  Config:     ${localUrl}/config/:client`);
   console.log('='.repeat(50));
   console.log('Resources:');
+  console.log('  gruenerator://system-prompt  <-- AI should read this first');
   console.log('  gruenerator://info');
   console.log('  gruenerator://collections');
   Object.keys(config.collections).forEach(key => {
