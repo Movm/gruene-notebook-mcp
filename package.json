@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node --test src/**/*.test.js"
+    "test": "node --test src/**/*.test.js",
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run"
   },
   "keywords": [
     "mcp",
@@ -40,5 +42,10 @@
   "bugs": {
     "url": "https://github.com/Movm/Gruenerator-MCP/issues"
   },
-  "homepage": "https://github.com/Movm/Gruenerator-MCP#readme"
+  "homepage": "https://github.com/Movm/Gruenerator-MCP#readme",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release": "^25.0.2"
+  }
 }
