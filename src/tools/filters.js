@@ -9,10 +9,20 @@ export const filtersTool = {
   name: 'gruenerator_get_filters',
   description: `Gibt verfügbare Filterwerte für eine Sammlung zurück.
 
-Nutze dieses Tool um herauszufinden, welche Filter für eine Sammlung verfügbar sind
-und welche Werte diese Filter haben können.
+WICHTIG: Rufe dieses Tool IMMER auf BEVOR du gruenerator_search mit Filtern verwendest!
 
-Beispiel: Für kommunalwiki gibt es die Filter article_type und category.`,
+## Wann aufrufen?
+
+- Nutzer fragt nach bestimmtem Dokumenttyp (z.B. "nur Praxishilfen", "nur Grundsatzprogramm")
+- Nutzer will nach Kategorie filtern (z.B. "nur zum Thema Umwelt")
+- Du willst die Suche eingrenzen
+
+## Beispiel-Workflow
+
+1. Nutzer: "Suche Praxishilfen zum Thema Haushalt im Kommunalwiki"
+2. Du rufst auf: gruenerator_get_filters({ collection: "kommunalwiki" })
+3. Du erhältst: { article_type: ["praxishilfe", ...], category: ["Haushalt", ...] }
+4. Du rufst auf: gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { article_type: "praxishilfe", category: "Haushalt" } })`,
 
   inputSchema: {
     collection: z.enum([
@@ -21,8 +31,9 @@ Beispiel: Für kommunalwiki gibt es die Filter article_type und category.`,
       'bundestagsfraktion',
       'gruene-de',
       'gruene-at',
-      'kommunalwiki'
-    ]).describe('Sammlung für die Filterwerte abgerufen werden sollen')
+      'kommunalwiki',
+      'boell-stiftung'
+    ]).describe('Sammlung für die Filterwerte - muss vor gefilterter Suche aufgerufen werden')
   },
 
   async handler({ collection }) {
