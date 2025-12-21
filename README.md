@@ -1,34 +1,63 @@
 # Gruenerator MCP Server
 
-Ein [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) Server, der KI-Assistenten direkten Zugriff auf Grüne Parteiprogramme ermöglicht.
+[![CI](https://github.com/Movm/Gruenerator-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Movm/Gruenerator-MCP/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server that gives AI assistants direct access to Green Party political programs from Germany and Austria.
+
+## Table of Contents
+
+- [Demo](#demo)
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [MCP Tools & Resources](#mcp-tools--resources)
+- [Search Modes](#search-modes)
+- [Contributing](#contributing)
+- [Acknowledgments](#acknowledgments)
+- [License](#license)
+
+## Demo
+
+<!-- Add screenshot or GIF of MCP client using Gruenerator -->
+*Coming soon: Demo of search functionality in action*
 
 ## Features
 
-- **Hybrid-Suche** - Kombiniert Vektor- und Textsuche mit RRF-Fusion
-- **Deutsche Optimierung** - Umlaut-Handling (ä→ae, ö→oe, etc.) und Query-Varianten
-- **Qualitäts-Scoring** - Ergebnisse gewichtet nach Dokumentenqualität
-- **Semantisches Caching** - Schnelle Antworten für wiederholte Anfragen
-- **Metadaten-Filter** - Filterung nach Dokumenttyp, Titel, etc.
-- **MCP Resources** - Direkter Zugriff auf Sammlungsinformationen
+- **Hybrid Search** - Combines vector and text search with RRF fusion
+- **German Optimization** - Umlaut handling (ä→ae, ö→oe, etc.) and query variants
+- **Quality Scoring** - Results weighted by document quality
+- **Semantic Caching** - Fast responses for repeated queries
+- **Metadata Filtering** - Filter by document type, title, etc.
+- **MCP Resources** - Direct access to collection information
 
-## Verfügbare Dokumentensammlungen
+## Available Document Collections
 
-| Sammlung | Beschreibung |
-|----------|--------------|
-| `oesterreich` | Die Grünen Österreich: EU-Wahlprogramm, Grundsatzprogramm, Nationalratswahl-Programm |
-| `deutschland` | Bündnis 90/Die Grünen: Grundsatzprogramm 2020 |
+| Collection | Description |
+|------------|-------------|
+| `oesterreich` | Die Grünen Austria: EU Election Program, Basic Program, National Council Election Program |
+| `deutschland` | Bündnis 90/Die Grünen: Basic Program 2020 |
 
----
+## Prerequisites
 
-## Installation & Konfiguration
+Before you begin, ensure you have:
 
-### Mit Docker (empfohlen)
+- **Node.js** >= 18.0.0
+- **Qdrant** vector database instance ([cloud](https://cloud.qdrant.io/) or self-hosted)
+- **Mistral API key** for embedding generation ([get one here](https://console.mistral.ai/))
+
+## Installation
+
+### With Docker (Recommended)
 
 ```bash
-# Image bauen
+# Build image
 docker build -t gruenerator-mcp .
 
-# Container starten
+# Run container
 docker run -d \
   --name gruenerator-mcp \
   -p 3000:3000 \
@@ -38,52 +67,52 @@ docker run -d \
   gruenerator-mcp
 ```
 
-### Lokal entwickeln
+### Local Development
 
 ```bash
-# Repository klonen
+# Clone repository
 git clone https://github.com/Movm/Gruenerator-MCP.git
 cd Gruenerator-MCP
 
-# Dependencies installieren
+# Install dependencies
 npm install
 
-# Umgebungsvariablen setzen
+# Set environment variables
 cp .env.example .env
-# .env bearbeiten
+# Edit .env with your credentials
 
-# Server starten
+# Start server
 npm start
 
-# Oder mit Auto-Reload
+# Or with auto-reload
 npm run dev
 ```
 
-### Mit Coolify
+### With Coolify
 
-1. Neues Projekt erstellen
-2. Git Repository verbinden: `https://github.com/Movm/Gruenerator-MCP`
-3. Umgebungsvariablen setzen (siehe unten)
-4. Deployen
+1. Create a new project
+2. Connect Git repository: `https://github.com/Movm/Gruenerator-MCP`
+3. Set environment variables (see below)
+4. Deploy
 
-### Umgebungsvariablen
+## Configuration
 
-| Variable | Beschreibung | Erforderlich |
-|----------|--------------|--------------|
-| `QDRANT_URL` | URL zur Qdrant-Instanz | Ja |
-| `QDRANT_API_KEY` | API-Key für Qdrant | Ja |
-| `MISTRAL_API_KEY` | API-Key für Mistral Embeddings | Ja |
-| `PORT` | Server-Port | Nein (Standard: 3000) |
-| `PUBLIC_URL` | Öffentliche URL für Config-Generierung | Nein |
-| `LOG_LEVEL` | Log-Level: DEBUG, INFO, WARN, ERROR | Nein (Standard: INFO) |
+### Environment Variables
 
----
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `QDRANT_URL` | URL to Qdrant instance | Yes |
+| `QDRANT_API_KEY` | API key for Qdrant | Yes |
+| `MISTRAL_API_KEY` | API key for Mistral embeddings | Yes |
+| `PORT` | Server port | No (default: 3000) |
+| `PUBLIC_URL` | Public URL for config generation | No |
+| `LOG_LEVEL` | Log level: DEBUG, INFO, WARN, ERROR | No (default: INFO) |
 
-## MCP Client Konfiguration
+### MCP Client Setup
 
-### Cursor / Claude Desktop
+#### Cursor / Claude Desktop
 
-Füge in deiner MCP-Konfiguration hinzu:
+Add to your MCP configuration:
 
 ```json
 {
@@ -95,25 +124,25 @@ Füge in deiner MCP-Konfiguration hinzu:
 }
 ```
 
-Nach der Konfiguration kannst du Fragen stellen wie:
+After configuration, you can ask questions like:
 
-- "Suche in den österreichischen Grünen-Programmen nach Klimapolitik"
-- "Was sagt das Grundsatzprogramm der deutschen Grünen zur Energiewende?"
+- "Search the Austrian Green programs for climate policy"
+- "What does the German Green basic program say about energy transition?"
 
----
+## API Reference
 
-## API Endpoints
+### Endpoints
 
-| Endpoint | Methode | Beschreibung |
-|----------|---------|--------------|
-| `/mcp` | POST | MCP Kommunikation |
-| `/mcp` | GET | SSE Stream |
-| `/mcp` | DELETE | Session beenden |
-| `/health` | GET | Health Check mit Cache- und Request-Statistiken |
-| `/metrics` | GET | Detaillierte Server-Metriken |
-| `/.well-known/mcp.json` | GET | Auto-Discovery Metadata |
-| `/config/:client` | GET | Client-Konfiguration generieren |
-| `/info` | GET | Server-Informationen |
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/mcp` | POST | MCP communication |
+| `/mcp` | GET | SSE stream |
+| `/mcp` | DELETE | End session |
+| `/health` | GET | Health check with cache and request statistics |
+| `/metrics` | GET | Detailed server metrics |
+| `/.well-known/mcp.json` | GET | Auto-discovery metadata |
+| `/config/:client` | GET | Generate client configuration |
+| `/info` | GET | Server information |
 
 ### Health Check Response
 
@@ -152,29 +181,29 @@ Nach der Konfiguration kannst du Fragen stellen wie:
 }
 ```
 
----
+## MCP Tools & Resources
 
-## Verfügbare Tools
+### Tools
 
-### `gruenerator_search`
+#### `gruenerator_search`
 
-Durchsucht die Parteiprogramme mit Hybrid-, Vektor- oder Textsuche.
+Searches party programs with hybrid, vector, or text search.
 
-**Parameter:**
+**Parameters:**
 
-| Parameter | Typ | Beschreibung | Standard |
-|-----------|-----|--------------|----------|
-| `query` | string | Suchbegriff oder Frage | erforderlich |
-| `collection` | string | `oesterreich` oder `deutschland` | erforderlich |
-| `searchMode` | string | `hybrid`, `vector` oder `text` | `hybrid` |
-| `limit` | number | Maximale Anzahl Ergebnisse | 5 |
-| `filters` | object | Metadaten-Filter (documentType, title) | optional |
-| `useCache` | boolean | Cache verwenden | true |
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `query` | string | Search term or question | required |
+| `collection` | string | `oesterreich` or `deutschland` | required |
+| `searchMode` | string | `hybrid`, `vector`, or `text` | `hybrid` |
+| `limit` | number | Maximum number of results | 5 |
+| `filters` | object | Metadata filters (documentType, title) | optional |
+| `useCache` | boolean | Use cache | true |
 
-**Beispiel:**
+**Example:**
 ```json
 {
-  "query": "Klimaschutz und erneuerbare Energien",
+  "query": "climate protection and renewable energy",
   "collection": "oesterreich",
   "searchMode": "hybrid",
   "limit": 5,
@@ -182,13 +211,13 @@ Durchsucht die Parteiprogramme mit Hybrid-, Vektor- oder Textsuche.
 }
 ```
 
-### `gruenerator_cache_stats`
+#### `gruenerator_cache_stats`
 
-Zeigt Cache-Statistiken für Embeddings und Suchergebnisse.
+Shows cache statistics for embeddings and search results.
 
-**Parameter:** Keine
+**Parameters:** None
 
-**Beispiel-Antwort:**
+**Example Response:**
 ```json
 {
   "embeddings": { "entries": 50, "hits": 120, "misses": 30, "hitRate": "80%" },
@@ -196,41 +225,55 @@ Zeigt Cache-Statistiken für Embeddings und Suchergebnisse.
 }
 ```
 
-### `get_client_config`
+#### `get_client_config`
 
-Generiert fertige MCP-Konfigurationen für verschiedene Clients.
+Generates ready-to-use MCP configurations for various clients.
 
-**Parameter:**
-- `client` (string, erforderlich) - `claude`, `cursor` oder `vscode`
+**Parameters:**
+- `client` (string, required) - `claude`, `cursor`, or `vscode`
 
----
+### Resources
 
-## MCP Resources
+The server provides the following resources via MCP protocol:
 
-Der Server stellt folgende Resources über das MCP-Protokoll bereit:
+| URI | Description |
+|-----|-------------|
+| `gruenerator://info` | Server information and capabilities |
+| `gruenerator://collections` | List of all available collections |
+| `gruenerator://collections/oesterreich` | Details of the Austrian collection |
+| `gruenerator://collections/deutschland` | Details of the German collection |
 
-| URI | Beschreibung |
-|-----|--------------|
-| `gruenerator://info` | Server-Informationen und Fähigkeiten |
-| `gruenerator://collections` | Liste aller verfügbaren Sammlungen |
-| `gruenerator://collections/oesterreich` | Details zur österreichischen Sammlung |
-| `gruenerator://collections/deutschland` | Details zur deutschen Sammlung |
+## Search Modes
 
----
-
-## Suchmodi
-
-### Hybrid (Standard)
-Kombiniert Vektor- und Textsuche mit Reciprocal Rank Fusion (RRF). Beste Ergebnisse für die meisten Anfragen.
+### Hybrid (Default)
+Combines vector and text search with Reciprocal Rank Fusion (RRF). Best results for most queries.
 
 ### Vector
-Reine semantische Suche basierend auf Embeddings. Gut für konzeptuelle Fragen.
+Pure semantic search based on embeddings. Good for conceptual questions.
 
 ### Text
-Klassische Textsuche mit deutschen Optimierungen. Gut für exakte Begriffe oder Namen.
+Classic text search with German optimizations. Good for exact terms or names.
 
----
+## Contributing
 
-## Lizenz
+Contributions are welcome! Here's how you can help:
 
-MIT License - siehe [LICENSE](LICENSE)
+1. **Report bugs** - Open an issue using the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md)
+2. **Request features** - Open an issue using the [feature request template](.github/ISSUE_TEMPLATE/feature_request.md)
+3. **Submit PRs** - Fork the repo, create a branch, and submit a pull request
+
+Please ensure your PR:
+- Passes CI checks
+- Follows existing code style
+- Includes appropriate documentation updates
+
+## Acknowledgments
+
+- [Model Context Protocol](https://modelcontextprotocol.io/) - The protocol powering this server
+- [Qdrant](https://qdrant.tech/) - Vector database for semantic search
+- [Mistral AI](https://mistral.ai/) - Embedding generation
+- [Die Grünen Österreich](https://www.gruene.at/) & [Bündnis 90/Die Grünen](https://www.gruene.de/) - Source documents
+
+## License
+
+MIT License - see [LICENSE](LICENSE)
