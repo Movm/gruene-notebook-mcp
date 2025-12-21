@@ -29,3 +29,6 @@ build/
 .cache/
 *.cache
 local_cache/
+
+# Claude Code
+CLAUDE.md
