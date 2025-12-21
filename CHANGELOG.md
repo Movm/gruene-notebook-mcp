@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/Movm/Gruenerator-MCP/compare/v2.0.0...v2.1.0) (2025-12-21)
+
+
+### Features
+
+* **prompts:** Rewrite system prompt for world-class AI guidance ([4ef950a](https://github.com/Movm/Gruenerator-MCP/commit/4ef950aef7cb2d55cd07eb1197315c14d4d93c8a))
+
 # [2.0.0](https://github.com/Movm/Gruenerator-MCP/compare/v1.0.0...v2.0.0) (2025-12-21)
 
 
