@@ -9,6 +9,7 @@ import {
   cacheSearch,
   getCacheStats
 } from '../utils/cache.js';
+import { getEnrichedPersonSearch } from '../services/EnrichedPersonSearch.js';
 
 // All available collection keys for validation
 const COLLECTION_KEYS = ['oesterreich', 'deutschland', 'bundestagsfraktion', 'gruene-de', 'gruene-at', 'kommunalwiki', 'boell-stiftung'];
@@ -42,7 +43,9 @@ WICHTIG: Rufe ZUERST gruenerator_get_filters auf, um gültige Filterwerte zu erf
 | Sammlung | Verfügbare Filter |
 |----------|-------------------|
 | alle Sammlungen | primary_category (Hauptkategorie) |
-| kommunalwiki, boell-stiftung | content_type (Inhaltstyp) |
+| kommunalwiki, boell-stiftung | content_type (Inhaltstyp), subcategories (Unterkategorien) |
+| boell-stiftung | region (z.B. europa, asien, nahost) |
+| bundestagsfraktion, gruene-de, gruene-at | country (DE oder AT) |
 
 ## Beispiele
 
@@ -59,7 +62,10 @@ Suche mit Filter (NACH Aufruf von gruenerator_get_filters):
     limit: z.number().min(1).max(20).default(5).describe('Anzahl Ergebnisse (1-20)'),
     filters: z.object({
       primary_category: z.string().optional().describe('Hauptkategorie (alle Sammlungen) - erst gruenerator_get_filters aufrufen!'),
-      content_type: z.string().optional().describe('Inhaltstyp (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!')
+      content_type: z.string().optional().describe('Inhaltstyp (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!'),
+      subcategories: z.string().optional().describe('Unterkategorie (für kommunalwiki, boell-stiftung) - erst gruenerator_get_filters aufrufen!'),
+      region: z.string().optional().describe('Region (nur boell-stiftung: europa, asien, nahost, etc.) - erst gruenerator_get_filters aufrufen!'),
+      country: z.string().optional().describe('Land (DE oder AT für bundestagsfraktion, gruene-de, gruene-at) - erst gruenerator_get_filters aufrufen!')
     }).optional().describe('Filter - IMMER erst gruenerator_get_filters aufrufen um gültige Werte zu erhalten'),
     useCache: z.boolean().default(true).describe('Cache für schnellere Ergebnisse')
   },
@@ -84,6 +90,21 @@ Suche mit Filter (NACH Aufruf von gruenerator_get_filters):
     const safeLimit = Math.min(Math.max(1, limit), 20);
 
     try {
+      // Try enriched person search for bundestagsfraktion collection
+      if (collection === 'bundestagsfraktion') {
+        try {
+          const enrichedService = getEnrichedPersonSearch();
+          const personResult = await enrichedService.search(query);
+
+          if (personResult.isPersonQuery) {
+            console.error(`[Search] Enriched person search for: ${personResult.metadata.extractedName}`);
+            return formatPersonSearchResult(personResult, collectionConfig);
+          }
+        } catch (personError) {
+          console.error('[Search] Person detection failed, falling back to regular search:', personError.message);
+        }
+      }
+
       // Check search cache first
       if (useCache) {
         const cachedResults = getCachedSearch(collection, query, searchMode, filters);
@@ -208,27 +229,112 @@ Suche mit Filter (NACH Aufruf von gruenerator_get_filters):
 
 /**
  * Build Qdrant filter from metadata filters
+ * Supports: primary_category, content_type, subcategories, region, country
  */
 function buildQdrantFilter(filters) {
   if (!filters) return null;
 
   const must = [];
+  const filterKeys = ['primary_category', 'content_type', 'subcategories', 'region', 'country'];
 
-  if (filters.primary_category) {
-    must.push({
-      key: 'primary_category',
-      match: { value: filters.primary_category }
-    });
-  }
-
-  if (filters.content_type) {
-    must.push({
-      key: 'content_type',
-      match: { value: filters.content_type }
-    });
+  for (const key of filterKeys) {
+    const value = filters[key];
+    if (value) {
+      must.push({
+        key,
+        match: { value }
+      });
+    }
   }
 
   return must.length > 0 ? { must } : null;
+}
+
+/**
+ * Format enriched person search result for MCP response
+ */
+function formatPersonSearchResult(personResult, collectionConfig) {
+  const { person, contentMentions, drucksachen, aktivitaeten, metadata } = personResult;
+
+  const results = [];
+
+  // Add person profile as first result
+  results.push({
+    rank: 1,
+    relevance: '100%',
+    source: `Profil: ${person.name}`,
+    type: 'person_profile',
+    excerpt: [
+      person.fraktion ? `Fraktion: ${person.fraktion}` : null,
+      person.wahlkreis ? `Wahlkreis: ${person.wahlkreis}` : null,
+      person.beruf ? `Beruf: ${person.beruf}` : null,
+      person.vita ? `\n${person.vita}` : null
+    ].filter(Boolean).join('\n'),
+    searchMethod: 'person_detection'
+  });
+
+  // Add content mentions
+  for (const mention of (contentMentions || []).slice(0, 5)) {
+    results.push({
+      rank: results.length + 1,
+      relevance: `${Math.round(mention.similarity * 100)}%`,
+      source: mention.title,
+      url: mention.url,
+      type: 'content_mention',
+      excerpt: mention.snippet,
+      searchMethod: mention.searchMethod || 'hybrid'
+    });
+  }
+
+  // Add Drucksachen
+  for (const d of (drucksachen || []).slice(0, 5)) {
+    results.push({
+      rank: results.length + 1,
+      relevance: '95%',
+      source: `${d.drucksachetyp}: ${d.titel}`,
+      url: `https://dip.bundestag.de/drucksache/${d.dokumentnummer}`,
+      type: 'drucksache',
+      excerpt: `${d.dokumentnummer} vom ${d.datum}`,
+      searchMethod: 'dip_api'
+    });
+  }
+
+  // Add Aktivitäten
+  for (const a of (aktivitaeten || []).slice(0, 5)) {
+    results.push({
+      rank: results.length + 1,
+      relevance: '90%',
+      source: `${a.aktivitaetsart}: ${a.titel || 'Aktivität'}`,
+      type: 'aktivitaet',
+      excerpt: `${a.aktivitaetsart} vom ${a.datum}`,
+      searchMethod: 'dip_api'
+    });
+  }
+
+  return {
+    collection: collectionConfig.displayName,
+    description: collectionConfig.description,
+    query: metadata.query,
+    searchMode: 'person_enriched',
+    isPersonQuery: true,
+    person: {
+      name: person.name,
+      fraktion: person.fraktion,
+      wahlkreis: person.wahlkreis
+    },
+    resultsCount: results.length,
+    results,
+    metadata: {
+      searchType: 'person_enriched',
+      detectionConfidence: metadata.detectionConfidence,
+      detectionSource: metadata.detectionSource,
+      contentMentionsCount: metadata.contentMentionsCount,
+      drucksachenCount: metadata.drucksachenCount,
+      aktivitaetenCount: metadata.aktivitaetenCount,
+      fetchTimeMs: metadata.fetchTimeMs
+    },
+    cached: false
+  };
 }
 
 /**

@@ -41,7 +41,8 @@ export const config = {
       displayName: 'Grüne Bundestagsfraktion',
       description: 'Fachtexte, Ziele und Positionen von gruene-bundestag.de',
       filterableFields: {
-        primary_category: { label: 'Bereich', type: 'keyword' }
+        primary_category: { label: 'Bereich', type: 'keyword' },
+        country: { label: 'Land', type: 'keyword' }
       }
     },
     'gruene-de': {
@@ -49,7 +50,8 @@ export const config = {
       displayName: 'Grüne Deutschland (gruene.de)',
       description: 'Inhalte von gruene.de – Positionen, Themen und Aktuelles',
       filterableFields: {
-        primary_category: { label: 'Bereich', type: 'keyword' }
+        primary_category: { label: 'Bereich', type: 'keyword' },
+        country: { label: 'Land', type: 'keyword' }
       }
     },
     'gruene-at': {
@@ -57,7 +59,8 @@ export const config = {
       displayName: 'Grüne Österreich (gruene.at)',
       description: 'Inhalte von gruene.at – Positionen, Themen und Aktuelles',
       filterableFields: {
-        primary_category: { label: 'Bereich', type: 'keyword' }
+        primary_category: { label: 'Bereich', type: 'keyword' },
+        country: { label: 'Land', type: 'keyword' }
       }
     },
     kommunalwiki: {
@@ -66,7 +69,8 @@ export const config = {
       description: 'Fachwissen zur Kommunalpolitik (Heinrich-Böll-Stiftung)',
       filterableFields: {
         content_type: { label: 'Artikeltyp', type: 'keyword' },
-        primary_category: { label: 'Kategorie', type: 'keyword' }
+        primary_category: { label: 'Kategorie', type: 'keyword' },
+        subcategories: { label: 'Unterkategorien', type: 'keyword' }
       }
     },
     'boell-stiftung': {
@@ -75,7 +79,9 @@ export const config = {
       description: 'Analysen, Dossiers und Atlanten der Heinrich-Böll-Stiftung',
       filterableFields: {
         content_type: { label: 'Inhaltstyp', type: 'keyword' },
-        primary_category: { label: 'Thema', type: 'keyword' }
+        primary_category: { label: 'Thema', type: 'keyword' },
+        subcategories: { label: 'Unterkategorien', type: 'keyword' },
+        region: { label: 'Region', type: 'keyword' }
       }
     }
   }

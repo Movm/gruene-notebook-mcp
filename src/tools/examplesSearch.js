@@ -12,7 +12,36 @@ const DEFAULT_THRESHOLD = 0.15;
 
 export const examplesSearchTool = {
   name: 'gruenerator_examples_search',
-  description: 'Sucht nach Social-Media-Beispielen der Grünen (Instagram, Facebook)',
+  description: `Sucht nach Social-Media-Beispielen der Grünen (Instagram, Facebook).
+
+## Wann verwenden?
+
+- Nutzer will Social-Media-Beispiele oder Posts sehen
+- Nutzer will Kommunikationsbeispiele zu einem Thema
+- Nutzer fragt "Wie kommunizieren die Grünen X auf Social Media?"
+- Nutzer will Instagram- oder Facebook-Posts zu einem Thema
+
+## Filter
+
+- platform: "instagram", "facebook", oder "all" (Standard)
+- country: "DE" (Deutschland), "AT" (Österreich), oder "all" (Standard)
+- limit: 1-20 Ergebnisse (Standard: 5)
+
+## Rückgabe
+
+- examples[]: content, platform, country, score
+- metadata: likes, comments, url, author, date
+
+## Hinweis
+
+Die Collection "social_media_examples" muss indexiert sein.
+Bei Fehler "Collection not found" → Social-Media-Beispiele noch nicht verfügbar.
+
+## Beispiele
+
+- "Instagram-Posts zu Klimaschutz" → gruenerator_examples_search({ query: "Klimaschutz", platform: "instagram" })
+- "Facebook-Beispiele aus Österreich" → gruenerator_examples_search({ query: "Politik", platform: "facebook", country: "AT" })
+- "Wie posten Grüne über Bildung?" → gruenerator_examples_search({ query: "Bildung", limit: 10 })`,
 
   inputSchema: {
     query: z.string().describe('Thema für Beispielsuche (z.B. "Klimaschutz", "Bildungspolitik")'),

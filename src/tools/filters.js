@@ -1,13 +1,14 @@
 import { z } from 'zod';
 import { config } from '../config.js';
-import { getUniqueFieldValues } from '../qdrant/client.js';
+import { getFieldValueCounts } from '../qdrant/client.js';
 
 /**
  * Tool to discover available filter values for a collection
+ * Returns faceted values with document counts for better filtering UX
  */
 export const filtersTool = {
   name: 'gruenerator_get_filters',
-  description: `Gibt verfügbare Filterwerte für eine Sammlung zurück.
+  description: `Gibt verfügbare Filterwerte für eine Sammlung zurück (mit Dokumentanzahl pro Wert).
 
 WICHTIG: Rufe dieses Tool IMMER auf BEVOR du gruenerator_search mit Filtern verwendest!
 
@@ -15,14 +16,22 @@ WICHTIG: Rufe dieses Tool IMMER auf BEVOR du gruenerator_search mit Filtern verw
 
 - Nutzer fragt nach bestimmtem Dokumenttyp (z.B. "nur Praxishilfen", "nur Grundsatzprogramm")
 - Nutzer will nach Kategorie filtern (z.B. "nur zum Thema Umwelt")
+- Nutzer will nach Region filtern (z.B. "nur Europa" bei Böll-Stiftung)
+- Nutzer will nach Land filtern (z.B. "nur Deutschland" oder "nur Österreich")
 - Du willst die Suche eingrenzen
+
+## Verfügbare Filter pro Sammlung
+
+- **kommunalwiki**: content_type, primary_category, subcategories
+- **boell-stiftung**: content_type, primary_category, subcategories, region
+- **bundestagsfraktion**, **gruene-de**, **gruene-at**: primary_category, country
 
 ## Beispiel-Workflow
 
 1. Nutzer: "Suche Praxishilfen zum Thema Haushalt im Kommunalwiki"
 2. Du rufst auf: gruenerator_get_filters({ collection: "kommunalwiki" })
-3. Du erhältst: { content_type: ["praxishilfe", ...], primary_category: ["Haushalt", ...] }
-4. Du rufst auf: gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { content_type: "praxishilfe", primary_category: "Haushalt" } })`,
+3. Du erhältst: { content_type: { values: [{ value: "praxishilfe", count: 45 }, ...] }, ... }
+4. Du rufst auf: gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { content_type: "praxishilfe" } })`,
 
   inputSchema: {
     collection: z.enum([
@@ -58,14 +67,14 @@ WICHTIG: Rufe dieses Tool IMMER auf BEVOR du gruenerator_search mit Filtern verw
       const filters = {};
 
       for (const [field, fieldConfig] of Object.entries(col.filterableFields)) {
-        console.error(`[Filters] Fetching unique values for ${collection}.${field}`);
-        const values = await getUniqueFieldValues(col.name, field);
+        console.error(`[Filters] Fetching value counts for ${collection}.${field}`);
+        const valuesWithCounts = await getFieldValueCounts(col.name, field, 50);
 
         filters[field] = {
           label: fieldConfig.label,
           type: fieldConfig.type,
-          values,
-          count: values.length
+          values: valuesWithCounts,
+          totalUniqueValues: valuesWithCounts.length
         };
       }
 

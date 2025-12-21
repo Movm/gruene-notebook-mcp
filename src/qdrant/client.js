@@ -538,3 +538,60 @@ export async function getUniqueFieldValues(collectionName, fieldName, limit = 10
     return [];
   }
 }
+
+/**
+ * Get unique field values with document counts (faceted search)
+ * Returns values sorted by count (most common first)
+ */
+export async function getFieldValueCounts(collectionName, fieldName, maxValues = 50, baseFilter = null) {
+  const qdrant = await getQdrantClient();
+
+  try {
+    const valueCounts = new Map();
+    let offset = null;
+    let iterations = 0;
+    const maxIterations = 100;
+
+    while (iterations < maxIterations) {
+      const scrollOptions = {
+        limit: 100,
+        offset: offset,
+        with_payload: { include: [fieldName] },
+        with_vector: false
+      };
+
+      if (baseFilter) {
+        scrollOptions.filter = baseFilter;
+      }
+
+      const scrollResult = await qdrant.scroll(collectionName, scrollOptions);
+
+      if (!scrollResult.points?.length) break;
+
+      for (const point of scrollResult.points) {
+        const value = point.payload?.[fieldName];
+        if (value !== undefined && value !== null && value !== '') {
+          if (Array.isArray(value)) {
+            for (const v of value) {
+              if (v) valueCounts.set(String(v), (valueCounts.get(String(v)) || 0) + 1);
+            }
+          } else {
+            valueCounts.set(String(value), (valueCounts.get(String(value)) || 0) + 1);
+          }
+        }
+      }
+
+      offset = scrollResult.next_page_offset;
+      if (!offset) break;
+      iterations++;
+    }
+
+    return [...valueCounts.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, maxValues);
+  } catch (error) {
+    console.error(`[Qdrant] Error fetching value counts for ${fieldName}:`, error.message);
+    return [];
+  }
+}
