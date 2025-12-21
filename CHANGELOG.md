@@ -1,3 +1,23 @@
+# [2.0.0](https://github.com/Movm/Gruenerator-MCP/compare/v1.0.0...v2.0.0) (2025-12-21)
+
+
+### Features
+
+* **api:** Standardize filter fields and add URL to search results ([018d8b5](https://github.com/Movm/Gruenerator-MCP/commit/018d8b5112650f6e7854657cd82579167f8121f1))
+* **server:** Add ChatGPT Apps SDK compatibility ([a4b3304](https://github.com/Movm/Gruenerator-MCP/commit/a4b3304e4f3f0a866bad31e58ce81f2378a678db))
+* **tools:** Add person search and examples search MCP tools ([d888f2e](https://github.com/Movm/Gruenerator-MCP/commit/d888f2eb1521eee279f5c62289a5a7ea644567bd))
+
+
+### BREAKING CHANGES
+
+* **api:** Filter field names changed:
+- `title` → `primary_category` (oesterreich, deutschland)
+- `section` → `primary_category` (bundestagsfraktion, gruene-de, gruene-at)
+- `article_type` → `content_type` (kommunalwiki)
+- `category` → `primary_category` (kommunalwiki)
+- `topic` → `primary_category` (boell-stiftung)
+- `region` removed (boell-stiftung)
+
 # 1.0.0 (2025-12-21)
 
 
