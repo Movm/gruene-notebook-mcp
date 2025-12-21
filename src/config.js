@@ -23,12 +23,51 @@ export const config = {
     oesterreich: {
       name: 'oesterreich_gruene_documents',
       displayName: 'Die Grünen Österreich',
-      description: 'EU-Wahlprogramm, Grundsatzprogramm, Nationalratswahl-Programm'
+      description: 'EU-Wahlprogramm, Grundsatzprogramm, Nationalratswahl-Programm',
+      filterableFields: {
+        title: { label: 'Programm', type: 'keyword' }
+      }
     },
     deutschland: {
       name: 'grundsatz_documents',
       displayName: 'Bündnis 90/Die Grünen',
-      description: 'Grundsatzprogramm 2020'
+      description: 'Grundsatzprogramm 2020, EU-Wahlprogramm 2024, Regierungsprogramm 2025',
+      filterableFields: {
+        title: { label: 'Programm', type: 'keyword' }
+      }
+    },
+    bundestagsfraktion: {
+      name: 'bundestag_content',
+      displayName: 'Grüne Bundestagsfraktion',
+      description: 'Fachtexte, Ziele und Positionen von gruene-bundestag.de',
+      filterableFields: {
+        section: { label: 'Bereich', type: 'keyword' }
+      }
+    },
+    'gruene-de': {
+      name: 'gruene_de_documents',
+      displayName: 'Grüne Deutschland (gruene.de)',
+      description: 'Inhalte von gruene.de – Positionen, Themen und Aktuelles',
+      filterableFields: {
+        section: { label: 'Bereich', type: 'keyword' }
+      }
+    },
+    'gruene-at': {
+      name: 'gruene_at_documents',
+      displayName: 'Grüne Österreich (gruene.at)',
+      description: 'Inhalte von gruene.at – Positionen, Themen und Aktuelles',
+      filterableFields: {
+        section: { label: 'Bereich', type: 'keyword' }
+      }
+    },
+    kommunalwiki: {
+      name: 'kommunalwiki_documents',
+      displayName: 'KommunalWiki',
+      description: 'Fachwissen zur Kommunalpolitik (Heinrich-Böll-Stiftung)',
+      filterableFields: {
+        article_type: { label: 'Artikeltyp', type: 'keyword' },
+        category: { label: 'Kategorie', type: 'keyword' }
+      }
     }
   }
 };
