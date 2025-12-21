@@ -18,6 +18,8 @@ import { config, validateConfig } from './config.js';
 import { searchTool, cacheStatsTool } from './tools/search.js';
 import { clientConfigTool } from './tools/clientConfig.js';
 import { filtersTool } from './tools/filters.js';
+import { personSearchTool } from './tools/personSearch.js';
+import { examplesSearchTool } from './tools/examplesSearch.js';
 import { getCacheStats } from './utils/cache.js';
 import { info, error, logSearch, getStats } from './utils/logger.js';
 import { getCollectionResources, getCollectionResource, getServerInfoResource, readServerInfoResource } from './resources/collections.js';
@@ -211,6 +213,60 @@ function createMcpServer(baseUrl) {
     }
   );
 
+  // Person Search Tool
+  server.tool(
+    personSearchTool.name,
+    personSearchTool.inputSchema,
+    async (params) => {
+      try {
+        const result = await personSearchTool.handler(params);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }],
+          isError: !!result.error
+        };
+      } catch (err) {
+        error('PersonSearch', `Person search failed: ${err.message}`);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: true, message: err.message, isPersonQuery: false })
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
+  // Examples Search Tool
+  server.tool(
+    examplesSearchTool.name,
+    examplesSearchTool.inputSchema,
+    async (params) => {
+      try {
+        const result = await examplesSearchTool.handler(params);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }],
+          isError: !!result.error
+        };
+      } catch (err) {
+        error('ExamplesSearch', `Examples search failed: ${err.message}`);
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({ error: true, message: err.message, resultsCount: 0, examples: [] })
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
   return server;
 }
 
@@ -290,6 +346,16 @@ app.get('/.well-known/mcp.json', (req, res) => {
       {
         name: 'get_client_config',
         description: 'Generiert fertige MCP-Client-Konfigurationen',
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
+        name: 'gruenerator_person_search',
+        description: 'Sucht nach Grünen-Abgeordneten mit angereicherten Daten aus der DIP-API',
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
+        name: 'gruenerator_examples_search',
+        description: 'Sucht nach Social-Media-Beispielen der Grünen (Instagram, Facebook)',
         annotations: { readOnlyHint: true, idempotentHint: true }
       }
     ],
@@ -373,6 +439,19 @@ app.get('/info', (req, res) => {
         name: 'get_client_config',
         description: 'Generiert MCP-Client-Konfigurationen',
         clients: ['claude', 'cursor', 'vscode'],
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
+        name: 'gruenerator_person_search',
+        description: 'Sucht nach Grünen-Abgeordneten mit angereicherten Daten aus der DIP-API',
+        features: ['Personenprofil', 'Drucksachen', 'Aktivitäten', 'Erwähnungen'],
+        annotations: { readOnlyHint: true, idempotentHint: true }
+      },
+      {
+        name: 'gruenerator_examples_search',
+        description: 'Sucht nach Social-Media-Beispielen der Grünen',
+        platforms: ['instagram', 'facebook'],
+        countries: ['DE', 'AT'],
         annotations: { readOnlyHint: true, idempotentHint: true }
       }
     ],

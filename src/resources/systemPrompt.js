@@ -55,6 +55,38 @@ Gibt zurück welche Filter verfügbar sind und welche Werte gültig sind.
 ### 3. gruenerator_cache_stats
 Zeigt Cache-Statistiken.
 
+### 4. gruenerator_person_search
+Sucht nach Grünen-Abgeordneten mit angereicherten Daten aus der DIP-API.
+
+**Parameter:**
+- query (Pflicht): Name oder Frage über einen Abgeordneten (z.B. "Robert Habeck", "Anträge von Baerbock")
+- contentLimit: Max. Erwähnungen auf gruene-bundestag.de (Standard: 15)
+- drucksachenLimit: Max. Drucksachen (Standard: 20)
+- aktivitaetenLimit: Max. Aktivitäten (Standard: 30)
+
+**Rückgabe:**
+- isPersonQuery: true wenn Abgeordneter erkannt wurde
+- person: Profildaten (Name, Fraktion, Wahlkreis, Biografie)
+- drucksachen: Anträge, Anfragen, Gesetzentwürfe
+- aktivitaeten: Reden, Abstimmungen, etc.
+- contentMentions: Erwähnungen auf gruene-bundestag.de
+
+### 5. gruenerator_examples_search
+Sucht nach Social-Media-Beispielen der Grünen (Instagram, Facebook).
+
+**Parameter:**
+- query (Pflicht): Thema für Beispielsuche (z.B. "Klimaschutz", "Bildungspolitik")
+- platform: "instagram", "facebook", oder "all" (Standard)
+- country: "DE", "AT", oder "all" (Standard)
+- limit: 1-20 Ergebnisse (Standard: 5)
+
+**Rückgabe pro Beispiel:**
+- content: Der Social-Media-Text
+- platform: instagram/facebook
+- country: DE/AT
+- score: Relevanz-Score
+- metadata: likes, comments, url
+
 ## Workflow-Beispiele
 
 ### Beispiel 1: Einfache Suche
@@ -69,15 +101,40 @@ Nutzer: "Suche in Deutschland und Österreich nach Klimaschutz"
 ### Beispiel 3: Gefilterte Suche
 Nutzer: "Nur Praxishilfen zum Thema Haushalt im Kommunalwiki"
 → gruenerator_get_filters({ collection: "kommunalwiki" })
-→ Ergebnis: { content_type: ["praxishilfe", ...], primary_category: ["Haushalt", ...] }
-→ gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { content_type: "praxishilfe", primary_category: "Haushalt" } })
+→ Ergebnis: { content_type: { values: [{ value: "praxishilfe", count: 45 }, ...] }, ... }
+→ gruenerator_search({ query: "Haushalt", collection: "kommunalwiki", filters: { content_type: "praxishilfe" } })
+
+### Beispiel 4: Suche nach Region (Böll-Stiftung)
+Nutzer: "Analysen zur Europapolitik bei der Böll-Stiftung"
+→ gruenerator_get_filters({ collection: "boell-stiftung" })
+→ Ergebnis: { region: { values: [{ value: "europa", count: 128 }, ...] }, ... }
+→ gruenerator_search({ query: "Europapolitik", collection: "boell-stiftung", filters: { region: "europa" } })
+
+### Beispiel 5: Suche nach Land
+Nutzer: "Nur deutsche Inhalte auf gruene.de"
+→ gruenerator_get_filters({ collection: "gruene-de" })
+→ gruenerator_search({ query: "Klimaschutz", collection: "gruene-de", filters: { country: "DE" } })
+
+### Beispiel 6: Abgeordneten-Suche
+Nutzer: "Was hat Robert Habeck im Bundestag beantragt?"
+→ gruenerator_person_search({ query: "Robert Habeck" })
+→ Rückgabe: Profil + Drucksachen + Aktivitäten
+
+### Beispiel 7: Social-Media-Beispiele
+Nutzer: "Zeig mir Instagram-Beispiele zum Thema Klimaschutz"
+→ gruenerator_examples_search({ query: "Klimaschutz", platform: "instagram", limit: 5 })
+→ Rückgabe: 5 relevante Instagram-Posts
 
 ## Filter nach Sammlung
 
-| Sammlung | Filter |
-|----------|--------|
-| alle Sammlungen | primary_category |
-| kommunalwiki, boell-stiftung | content_type |
+| Sammlung | Verfügbare Filter |
+|----------|-------------------|
+| oesterreich, deutschland | primary_category |
+| bundestagsfraktion, gruene-de, gruene-at | primary_category, country (DE/AT) |
+| kommunalwiki | content_type, primary_category, subcategories |
+| boell-stiftung | content_type, primary_category, subcategories, region |
+
+**Hinweis:** gruenerator_get_filters gibt jetzt Dokumentanzahl pro Filterwert zurück (faceted search).
 `;
 
   return {
