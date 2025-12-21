@@ -6,7 +6,7 @@ export const clientConfigTool = {
   description: 'Generiert eine fertige Konfiguration für verschiedene MCP-Clients (Claude Desktop, Cursor, VS Code). Gibt JSON zurück, das direkt in die jeweilige Config-Datei eingefügt werden kann.',
 
   inputSchema: {
-    client: z.enum(['claude', 'cursor', 'vscode']).describe('Für welchen Client die Config generiert werden soll: claude, cursor, oder vscode')
+    client: z.enum(['claude', 'cursor', 'vscode', 'chatgpt']).describe('Für welchen Client die Config generiert werden soll: claude, cursor, vscode, oder chatgpt')
   },
 
   handler({ client }, baseUrl) {
@@ -54,6 +54,17 @@ export const clientConfigTool = {
             }
           }
         }
+      },
+
+      chatgpt: {
+        description: 'In ChatGPT: Settings → Connectors → Create',
+        configPath: {
+          all: 'ChatGPT Settings → Apps & Connectors → Connectors → Create'
+        },
+        config: {
+          url: `${baseUrl}/mcp`,
+          note: 'Paste the URL when creating a new connector'
+        }
       }
     };
 
@@ -77,6 +88,7 @@ export function generateClientConfigs(baseUrl) {
   return {
     claude: clientConfigTool.handler({ client: 'claude' }, baseUrl),
     cursor: clientConfigTool.handler({ client: 'cursor' }, baseUrl),
-    vscode: clientConfigTool.handler({ client: 'vscode' }, baseUrl)
+    vscode: clientConfigTool.handler({ client: 'vscode' }, baseUrl),
+    chatgpt: clientConfigTool.handler({ client: 'chatgpt' }, baseUrl)
   };
 }

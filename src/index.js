@@ -6,6 +6,7 @@ console.log(`[Boot] Environment: ${process.env.NODE_ENV || 'development'}`);
 
 console.log('[Boot] Loading dependencies...');
 import express from 'express';
+import cors from 'cors';
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -37,6 +38,12 @@ try {
 console.log('[Boot] Setting up Express...');
 const app = express();
 app.use(express.json());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'mcp-session-id'],
+  exposedHeaders: ['Mcp-Session-Id'],
+}));
 console.log('[Boot] Express configured');
 
 // Helper: Base URL ermitteln
@@ -300,7 +307,7 @@ app.get('/.well-known/mcp.json', (req, res) => {
       name: col.displayName,
       description: col.description
     })),
-    supported_clients: ['claude', 'cursor', 'vscode']
+    supported_clients: ['claude', 'cursor', 'vscode', 'chatgpt']
   });
 });
 
@@ -308,7 +315,7 @@ app.get('/.well-known/mcp.json', (req, res) => {
 app.get('/config/:client', (req, res) => {
   const { client } = req.params;
   const baseUrl = getBaseUrl(req);
-  const validClients = ['claude', 'cursor', 'vscode'];
+  const validClients = ['claude', 'cursor', 'vscode', 'chatgpt'];
 
   if (!validClients.includes(client)) {
     return res.status(404).json({
